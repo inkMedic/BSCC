@@ -21,6 +21,11 @@ def show_sign_in_prompt(origin_widget: bui.Widget | None = None) -> None:
 
 
 def _show_account_settings() -> None:
+    if getattr(bui.app.plus, 'community_online', False):
+        from bauiv1lib.community_account import CommunityAccountWindow
+        bui.app.ui_v1.auxiliary_window_activate(win_type=CommunityAccountWindow,
+            win_create_call=lambda: CommunityAccountWindow(origin_widget=bui.get_special_widget('account_button')))
+        return
     from bauiv1lib.account.settings import AccountSettingsWindow
 
     # NOTE TO USERS: The code below is not the proper way to do things;

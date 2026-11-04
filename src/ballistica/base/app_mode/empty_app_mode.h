@@ -14,6 +14,7 @@ namespace ballistica::base {
 class EmptyAppMode : public AppMode {
  public:
   EmptyAppMode();
+  ~EmptyAppMode() override;
 
   static auto GetSingleton() -> EmptyAppMode*;
   void OnActivate() override;

@@ -421,6 +421,9 @@ class TournamentButton:
         self.on_pressed(self)
 
     def _show_leader(self) -> None:
+        if getattr(bui.app.plus, 'community_online', False):
+            bui.screenmessage(_commonassets.strings.status.unavailable_status)
+            return
         # pylint: disable=cyclic-import
         from bauiv1lib.account.viewer import AccountViewerWindow
 

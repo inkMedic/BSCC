@@ -431,7 +431,9 @@ void ConnectionToHost::HandleGamePacket(const std::vector<uint8_t>& data) {
           set_peer_spec(PlayerSpec(string_buffer.data()));
         }
 
-        peer_hash_ = g_base->Plus()->CalcV1PeerHash(peer_hash_input_);
+        if (!v2_auth_token_.has_value()) {
+          peer_hash_ = g_base->Plus()->CalcV1PeerHash(peer_hash_input_);
+        }
 
         set_can_communicate(true);
         g_core->logging->Log(LogName::kBaNetworking, LogLevel::kDebug, [this] {
@@ -464,7 +466,9 @@ void ConnectionToHost::HandleGamePacket(const std::vector<uint8_t>& data) {
           JsonObjBuilder dict = builder.root_object();
           dict.Add("b", kEngineBuildNumber);
 
-          g_base->Plus()->V1SetClientInfo(&dict);
+          if (!v2_auth_token_.has_value()) {
+            g_base->Plus()->V1SetClientInfo(&dict);
+          }
 
           // Pass the hash we generated from their handshake; they can use
           // this for v1 client auth.

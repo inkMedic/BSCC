@@ -6,7 +6,7 @@
 #include "ballistica/base/audio/audio_streamer.h"
 
 #if BA_ENABLE_AUDIO
-#if BA_PLATFORM_IOS_TVOS || BA_PLATFORM_ANDROID
+#if BA_USE_TREMOR_VORBIS
 #include "ivorbisfile.h"  // NOLINT
 #else
 #include <vorbis/vorbisfile.h>

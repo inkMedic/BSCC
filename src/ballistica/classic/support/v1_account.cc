@@ -87,7 +87,7 @@ auto V1Account::AccountTypeToIconString(V1AccountType type) -> std::string {
     case V1AccountType::kServer:
       return g_base->assets->CharStr(base::SpecialChar::kLocalAccount);
     case V1AccountType::kV2:
-      return g_base->assets->CharStr(base::SpecialChar::kV2Logo);
+      return g_base->assets->CharStr(base::SpecialChar::kGooglePlayGamesLogo);
     default:
       return "";
   }

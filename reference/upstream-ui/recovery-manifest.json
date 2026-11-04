@@ -1,0 +1,424 @@
+{
+  "head": "d89c2d90cae1593899bd17a1510fef2465acb437",
+  "shallow": false,
+  "reachable_commits": 4086,
+  "historical_distinct_paths": 4924,
+  "historical_named_server_package_paths": [],
+  "files": [
+    {
+      "commit": "b3da947ec29ab432947d5128331e07cffebd8850",
+      "original_path": "src/assets/ba_data/python/bauiv1lib/chest.py",
+      "recovered_path": "reference/upstream-ui/before-2026-10-02-docui/src/assets/ba_data/python/bauiv1lib/chest.py",
+      "git_blob": "8cb30143772d775e1177e66beee77d667e4463e5",
+      "sha256": "1a577f5656aadb1137373d5d2eae22379f60ccbd4030b7c522cac552c7e57a2c",
+      "bytes": 46239,
+      "lines": 1289,
+      "python_syntax_checked": true
+    },
+    {
+      "commit": "b3da947ec29ab432947d5128331e07cffebd8850",
+      "original_path": "src/assets/ba_data/python/bauiv1lib/inbox.py",
+      "recovered_path": "reference/upstream-ui/before-2026-10-02-docui/src/assets/ba_data/python/bauiv1lib/inbox.py",
+      "git_blob": "6f2659668687078796875b61a129cbdc86e48fc8",
+      "sha256": "1c821f3e9c8f0c1cd09e6ee6966c5692dc3ddde14c92d0e1808aaaf38d37b1d8",
+      "bytes": 46517,
+      "lines": 1265,
+      "python_syntax_checked": true
+    },
+    {
+      "commit": "b3da947ec29ab432947d5128331e07cffebd8850",
+      "original_path": "src/assets/ba_data/python/baclassic/_chest.py",
+      "recovered_path": "reference/upstream-ui/before-2026-10-02-docui/src/assets/ba_data/python/baclassic/_chest.py",
+      "git_blob": "5d4df477ce07c7ea5e797900b55f50305f6e6651",
+      "sha256": "e5e25e9e6338eaf150a53b7fff573e187443c8dd992441fb77fdce6ff8cf929e",
+      "bytes": 4612,
+      "lines": 104,
+      "python_syntax_checked": true
+    },
+    {
+      "commit": "b3da947ec29ab432947d5128331e07cffebd8850",
+      "original_path": "tools/bacommon/classic/_msg.py",
+      "recovered_path": "reference/upstream-ui/before-2026-10-02-docui/tools/bacommon/classic/_msg.py",
+      "git_blob": "30f74c764f828ffe2657556d39c40f4d3ea9741f",
+      "sha256": "5e783906bdab91f6e0b1a6cd837b33f0339532dab81c0b1d76562f907c06f958",
+      "bytes": 7105,
+      "lines": 275,
+      "python_syntax_checked": true
+    },
+    {
+      "commit": "b3da947ec29ab432947d5128331e07cffebd8850",
+      "original_path": "tools/bacommon/clouddialog/basic.py",
+      "recovered_path": "reference/upstream-ui/before-2026-10-02-docui/tools/bacommon/clouddialog/basic.py",
+      "git_blob": "9fc19fce51bfbb738bb7d7f494c54e6f94ab5c9e",
+      "sha256": "e9f2b7a37b114d61504271b35bfa43015d0ff16a5eebedc66982c28861c2d080",
+      "bytes": 6845,
+      "lines": 243,
+      "python_syntax_checked": true
+    },
+    {
+      "commit": "b3da947ec29ab432947d5128331e07cffebd8850",
+      "original_path": "tools/bacommon/clouddialog/__init__.py",
+      "recovered_path": "reference/upstream-ui/before-2026-10-02-docui/tools/bacommon/clouddialog/__init__.py",
+      "git_blob": "c6e6a4ca9fb8f4199afcd2faf72c45f86506900c",
+      "sha256": "0fe9aac67d4274c808aee8fa05f55fab7abcf73cae710975531ad31518de624a",
+      "bytes": 527,
+      "lines": 29,
+      "python_syntax_checked": true
+    },
+    {
+      "commit": "618b7aca0d00f1eb32b6a163ccf135943469fe1d",
+      "original_path": "src/assets/ba_data/python/bauiv1lib/store/__init__.py",
+      "recovered_path": "reference/upstream-ui/before-2026-01-08-store-cleanup/src/assets/ba_data/python/bauiv1lib/store/__init__.py",
+      "git_blob": "867b1714dc6484eaf6420c656abccb9be2c1cafe",
+      "sha256": "91378a29b1a5ff9fc564f0ffc988fc30baad73e5d68bc78f030ccd96c77cbd33",
+      "bytes": 59,
+      "lines": 1,
+      "python_syntax_checked": true
+    },
+    {
+      "commit": "618b7aca0d00f1eb32b6a163ccf135943469fe1d",
+      "original_path": "src/assets/ba_data/python/bauiv1lib/store/browser.py",
+      "recovered_path": "reference/upstream-ui/before-2026-01-08-store-cleanup/src/assets/ba_data/python/bauiv1lib/store/browser.py",
+      "git_blob": "ba89f606a48eeda19d27a2d07d998b3f98d646c1",
+      "sha256": "21f1ddb41a6879a305bfdb28c73c7f3a06ee3b8c00f9d935cda175a7a5f3b1ec",
+      "bytes": 46729,
+      "lines": 1255,
+      "python_syntax_checked": true
+    },
+    {
+      "commit": "618b7aca0d00f1eb32b6a163ccf135943469fe1d",
+      "original_path": "src/assets/ba_data/python/bauiv1lib/store/item.py",
+      "recovered_path": "reference/upstream-ui/before-2026-01-08-store-cleanup/src/assets/ba_data/python/bauiv1lib/store/item.py",
+      "git_blob": "f598256691f5e3339f53529cecd4532661e11991",
+      "sha256": "814d6ea1103146a1f5f612f0c9cc57896b7633c29210c187b6a0d145372ea041",
+      "bytes": 24861,
+      "lines": 729,
+      "python_syntax_checked": true
+    },
+    {
+      "commit": "618b7aca0d00f1eb32b6a163ccf135943469fe1d",
+      "original_path": "src/assets/ba_data/python/bauiv1lib/store/newstore.py",
+      "recovered_path": "reference/upstream-ui/before-2026-01-08-store-cleanup/src/assets/ba_data/python/bauiv1lib/store/newstore.py",
+      "git_blob": "be521f01bbb35e8f225824dd2d09130f7ec56afe",
+      "sha256": "28ae5f146fb8d5c92b43d4cb271479951d19c6da663d93b1193a06baeeda5139",
+      "bytes": 1677,
+      "lines": 59,
+      "python_syntax_checked": true
+    },
+    {
+      "commit": "618b7aca0d00f1eb32b6a163ccf135943469fe1d",
+      "original_path": "src/assets/ba_data/python/bauiv1lib/purchase.py",
+      "recovered_path": "reference/upstream-ui/before-2026-01-08-store-cleanup/src/assets/ba_data/python/bauiv1lib/purchase.py",
+      "git_blob": "6b85110cf6a7d8efcb075fefa1a9f0595d4aa5a3",
+      "sha256": "7eba0fb673cd702d25e6285f15a833421a8f7098254cc78dbb33dacc7e411db9",
+      "bytes": 6593,
+      "lines": 209,
+      "python_syntax_checked": true
+    },
+    {
+      "commit": "618b7aca0d00f1eb32b6a163ccf135943469fe1d",
+      "original_path": "src/assets/ba_data/python/baclassic/_store.py",
+      "recovered_path": "reference/upstream-ui/before-2026-01-08-store-cleanup/src/assets/ba_data/python/baclassic/_store.py",
+      "git_blob": "1c60d1170dd652f2a5ff897df3e02682038a7b9d",
+      "sha256": "bc969f4dca65b585e0f148217b888ea771eb02c90790f3a58565b464c2018e68",
+      "bytes": 25204,
+      "lines": 609,
+      "python_syntax_checked": true
+    },
+    {
+      "commit": "d89c2d90cae1593899bd17a1510fef2465acb437",
+      "original_path": "src/assets/ba_data/python/bauiv1lib/store.py",
+      "recovered_path": "reference/upstream-ui/current-head-cloud-contracts/src/assets/ba_data/python/bauiv1lib/store.py",
+      "git_blob": "82d5d49d96e163d34e093e93ca6aca53f91c7ee8",
+      "sha256": "31f51c643b22781b83bdbc5f7abb2f1bf73b9eab38fbb05341ca98b797b0da85",
+      "bytes": 2585,
+      "lines": 89,
+      "python_syntax_checked": true
+    },
+    {
+      "commit": "d89c2d90cae1593899bd17a1510fef2465acb437",
+      "original_path": "src/assets/ba_data/python/bauiv1lib/chestui.py",
+      "recovered_path": "reference/upstream-ui/current-head-cloud-contracts/src/assets/ba_data/python/bauiv1lib/chestui.py",
+      "git_blob": "58e2c7d301db07f0c347d62bf09aa0dff64e957c",
+      "sha256": "da328b7b9fe3c2cb126ddc803d4de52b6366ac9c6e852d326cf7a8a7e7083a9d",
+      "bytes": 5070,
+      "lines": 154,
+      "python_syntax_checked": true
+    },
+    {
+      "commit": "d89c2d90cae1593899bd17a1510fef2465acb437",
+      "original_path": "src/assets/ba_data/python/bauiv1lib/inboxui.py",
+      "recovered_path": "reference/upstream-ui/current-head-cloud-contracts/src/assets/ba_data/python/bauiv1lib/inboxui.py",
+      "git_blob": "0198a201f8ba0233f86f3bdd1b51a4b8e706713a",
+      "sha256": "68d371413eb2c61f05443602ad17ce1eed3784de05fd8d914ce3eb6ea28d0ed7",
+      "bytes": 2873,
+      "lines": 96,
+      "python_syntax_checked": true
+    },
+    {
+      "commit": "d89c2d90cae1593899bd17a1510fef2465acb437",
+      "original_path": "src/assets/ba_data/python/bauiv1lib/inventory.py",
+      "recovered_path": "reference/upstream-ui/current-head-cloud-contracts/src/assets/ba_data/python/bauiv1lib/inventory.py",
+      "git_blob": "1fc6a8ab1d06313501dfc5b98be71791f5d2bb44",
+      "sha256": "9c13132a74217ad49fd21ab550c4f23e9aa001de399031b486018ebfd4273b55",
+      "bytes": 23324,
+      "lines": 594,
+      "python_syntax_checked": true
+    },
+    {
+      "commit": "d89c2d90cae1593899bd17a1510fef2465acb437",
+      "original_path": "src/assets/ba_data/python/bauiv1lib/docui/_controller.py",
+      "recovered_path": "reference/upstream-ui/current-head-cloud-contracts/src/assets/ba_data/python/bauiv1lib/docui/_controller.py",
+      "git_blob": "c1f557f9706fe1f245f146f0a9cbaf2b7da8f5e6",
+      "sha256": "6f609ea047b794de922742c208288acfbed03e665dbbedd6f6939309dfbdf068",
+      "bytes": 73070,
+      "lines": 1921,
+      "python_syntax_checked": true
+    },
+    {
+      "commit": "d89c2d90cae1593899bd17a1510fef2465acb437",
+      "original_path": "src/assets/ba_data/python/bauiv1lib/docui/_cache.py",
+      "recovered_path": "reference/upstream-ui/current-head-cloud-contracts/src/assets/ba_data/python/bauiv1lib/docui/_cache.py",
+      "git_blob": "e38ec48a6fbd9b74a1f4a71554f65dd17a7d0c0d",
+      "sha256": "9c2220018885a3d33feeca3b58ab720ac8622db314d2cb74205490431b85c6b3",
+      "bytes": 6267,
+      "lines": 194,
+      "python_syntax_checked": true
+    },
+    {
+      "commit": "d89c2d90cae1593899bd17a1510fef2465acb437",
+      "original_path": "tools/bacommon/cloud.py",
+      "recovered_path": "reference/upstream-ui/current-head-cloud-contracts/tools/bacommon/cloud.py",
+      "git_blob": "d9fcbb90c0d8a53ab31eb65d5cf45f55303361b2",
+      "sha256": "167e1071bd9e25a0000fd13489c0b42ba4409baa74ad4966782af9da47c8cdc2",
+      "bytes": 34467,
+      "lines": 984,
+      "python_syntax_checked": true
+    },
+    {
+      "commit": "d89c2d90cae1593899bd17a1510fef2465acb437",
+      "original_path": "tools/bacommon/docui/routes/classicstore.py",
+      "recovered_path": "reference/upstream-ui/current-head-cloud-contracts/tools/bacommon/docui/routes/classicstore.py",
+      "git_blob": "d22b7e6ec65d2bf620a649a3c0bd0f6fdbbdddf8",
+      "sha256": "302533061944461b64a22e3b768bb2689cfac74b9561cad155c405c0fe917077",
+      "bytes": 11170,
+      "lines": 399,
+      "python_syntax_checked": true
+    },
+    {
+      "commit": "d89c2d90cae1593899bd17a1510fef2465acb437",
+      "original_path": "tools/bacommon/docui/routes/classicchest.py",
+      "recovered_path": "reference/upstream-ui/current-head-cloud-contracts/tools/bacommon/docui/routes/classicchest.py",
+      "git_blob": "177d7dbd1b3d6a3a2e451015b9a5e1fe26361e7b",
+      "sha256": "cd2aae000ac9de9313e2b61e67f2b6027eb90e7d70ff86f5f6bffc3886b5ac64",
+      "bytes": 3477,
+      "lines": 129,
+      "python_syntax_checked": true
+    },
+    {
+      "commit": "d89c2d90cae1593899bd17a1510fef2465acb437",
+      "original_path": "tools/bacommon/docui/routes/classicinbox.py",
+      "recovered_path": "reference/upstream-ui/current-head-cloud-contracts/tools/bacommon/docui/routes/classicinbox.py",
+      "git_blob": "65e6b6d4377d90d05322f69ec7817598b97a9be2",
+      "sha256": "c1d55e76f7f6711b29915de3ea2a4df2acfd2b9e0acfea7d3d012a30e0940e76",
+      "bytes": 2754,
+      "lines": 102,
+      "python_syntax_checked": true
+    },
+    {
+      "commit": "d89c2d90cae1593899bd17a1510fef2465acb437",
+      "original_path": "LICENSE",
+      "recovered_path": "reference/upstream-ui/LICENSE",
+      "git_blob": "5c2f6162db297b930e613c32915a54c64c871233",
+      "sha256": "8bcbe83a0eec5d5577aa2db17db813bcc84415cf95d5a26c39556c69094cffa5",
+      "bytes": 1231,
+      "lines": 21,
+      "python_syntax_checked": false
+    }
+  ],
+  "current_head_routes": [
+    {
+      "domains": [
+        "classicstore",
+        "classicinventory"
+      ],
+      "route_class": "Root",
+      "path": "/",
+      "method": "GET",
+      "source": "tools/bacommon/docui/routes/classicstore.py",
+      "line": 47
+    },
+    {
+      "domains": [
+        "classicstore",
+        "classicinventory"
+      ],
+      "route_class": "Purchase",
+      "path": "/p",
+      "method": "GET",
+      "source": "tools/bacommon/docui/routes/classicstore.py",
+      "line": 81
+    },
+    {
+      "domains": [
+        "classicstore",
+        "classicinventory"
+      ],
+      "route_class": "PurchaseConfirm",
+      "path": "/pc",
+      "method": "POST",
+      "source": "tools/bacommon/docui/routes/classicstore.py",
+      "line": 97
+    },
+    {
+      "domains": [
+        "classicstore",
+        "classicinventory"
+      ],
+      "route_class": "ProfileEdit",
+      "path": "/profile",
+      "method": "GET",
+      "source": "tools/bacommon/docui/routes/classicstore.py",
+      "line": 125
+    },
+    {
+      "domains": [
+        "classicstore",
+        "classicinventory"
+      ],
+      "route_class": "ProfileSave",
+      "path": "/profile/save",
+      "method": "POST",
+      "source": "tools/bacommon/docui/routes/classicstore.py",
+      "line": 148
+    },
+    {
+      "domains": [
+        "classicstore",
+        "classicinventory"
+      ],
+      "route_class": "ProfileDelete",
+      "path": "/profile/delete",
+      "method": "POST",
+      "source": "tools/bacommon/docui/routes/classicstore.py",
+      "line": 161
+    },
+    {
+      "domains": [
+        "classicstore",
+        "classicinventory"
+      ],
+      "route_class": "ProfileDeleteConfirm",
+      "path": "/profile/deleteconfirm",
+      "method": "GET",
+      "source": "tools/bacommon/docui/routes/classicstore.py",
+      "line": 171
+    },
+    {
+      "domains": [
+        "classicstore",
+        "classicinventory"
+      ],
+      "route_class": "ProfileCharacter",
+      "path": "/profile/character",
+      "method": "GET",
+      "source": "tools/bacommon/docui/routes/classicstore.py",
+      "line": 189
+    },
+    {
+      "domains": [
+        "classicstore",
+        "classicinventory"
+      ],
+      "route_class": "ProfileIcon",
+      "path": "/profile/icon",
+      "method": "GET",
+      "source": "tools/bacommon/docui/routes/classicstore.py",
+      "line": 206
+    },
+    {
+      "domains": [
+        "classicstore",
+        "classicinventory"
+      ],
+      "route_class": "ProfileGlobalUpgrade",
+      "path": "/profile/global",
+      "method": "GET",
+      "source": "tools/bacommon/docui/routes/classicstore.py",
+      "line": 223
+    },
+    {
+      "domains": [
+        "classicstore",
+        "classicinventory"
+      ],
+      "route_class": "ProfileGlobalUpgradeBuy",
+      "path": "/profile/global/buy",
+      "method": "POST",
+      "source": "tools/bacommon/docui/routes/classicstore.py",
+      "line": 242
+    },
+    {
+      "domains": [
+        "classicstore",
+        "classicinventory"
+      ],
+      "route_class": "ProfileMigrate",
+      "path": "/profile/migrate",
+      "method": "POST",
+      "source": "tools/bacommon/docui/routes/classicstore.py",
+      "line": 256
+    },
+    {
+      "domains": [
+        "classicchest"
+      ],
+      "route_class": "Root",
+      "path": "/",
+      "method": "GET",
+      "source": "tools/bacommon/docui/routes/classicchest.py",
+      "line": 42
+    },
+    {
+      "domains": [
+        "classicchest"
+      ],
+      "route_class": "Open",
+      "path": "/open",
+      "method": "POST",
+      "source": "tools/bacommon/docui/routes/classicchest.py",
+      "line": 63
+    },
+    {
+      "domains": [
+        "classicchest"
+      ],
+      "route_class": "AdWatched",
+      "path": "/adwatched",
+      "method": "POST",
+      "source": "tools/bacommon/docui/routes/classicchest.py",
+      "line": 78
+    },
+    {
+      "domains": [
+        "classicinbox"
+      ],
+      "route_class": "Root",
+      "path": "/",
+      "method": "GET",
+      "source": "tools/bacommon/docui/routes/classicinbox.py",
+      "line": 41
+    },
+    {
+      "domains": [
+        "classicinbox"
+      ],
+      "route_class": "Respond",
+      "path": "/",
+      "method": "POST",
+      "source": "tools/bacommon/docui/routes/classicinbox.py",
+      "line": 50
+    }
+  ],
+  "scope": "Local reachable Git history only; recovered historical clients are not current server templates"
+}

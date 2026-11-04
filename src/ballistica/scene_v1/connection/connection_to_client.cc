@@ -5,6 +5,7 @@
 #include <Python.h>
 
 #include <algorithm>
+#include <atomic>
 #include <cstdio>
 #include <string>
 #include <string_view>
@@ -31,11 +32,15 @@
 #include "ballistica/shared/python/python.h"
 
 namespace ballistica::scene_v1 {
+namespace {
+std::atomic<uint64_t> next_auth_connection_id{1};
+}
 
 ConnectionToClient::ConnectionToClient(int id)
     : id_(id),
       protocol_version_{
           classic::ClassicAppMode::GetSingleton()->host_protocol_version()} {
+  auth_connection_id_ = next_auth_connection_id.fetch_add(1);
   // We calc this once just in case it changes on our end (the client uses
   // it for their verification hash so we need to ensure it stays
   // consistent).
@@ -212,6 +217,12 @@ void ConnectionToClient::HandleGamePacket(const std::vector<uint8_t>& data) {
 
   switch (data[0]) {
     case BA_SCENEPACKET_HANDSHAKE_RESPONSE: {
+      // Once accepted, retain the authenticated identity. A delayed duplicate
+      // must not re-authenticate an established game after its ticket expires
+      // or the community control connection closes.
+      if (can_communicate()) {
+        return;
+      }
       std::optional<std::string> v2_auth_token;
       // We sent the client a handshake and they're responding.
       if (data.size() < 3) {
@@ -586,7 +597,7 @@ void ConnectionToClient::HandleMessagePacket(
             // v1 account info).
             if (auto t = root["tk"].as_string()) {
               token_ = std::string(*t);
-            } else {
+            } else if (!v2_authed_) {
               BA_LOG_ONCE(LogName::kBaNetworking, LogLevel::kWarning,
                           "No token in clientinfo msg.");
               Error("");
@@ -651,8 +662,7 @@ void ConnectionToClient::HandleMessagePacket(
           }
         } else {
           BA_LOG_ONCE(LogName::kBaNetworking, LogLevel::kWarning,
-                      "Got invalid json in clientinfo message: '"
-                          + std::string(info_str) + "'.");
+                      "Got invalid json in clientinfo message.");
           Error("");
         }
       }
@@ -1004,11 +1014,10 @@ auto ConnectionToClient::GetAsUDP() -> ConnectionToClientUDP* {
 // (verified spec, account id, profiles, purchases, cloud characters).
 // Returns false, changing nothing, if the token is unusable.
 auto ConnectionToClient::ApplyV2AuthToken_(const std::string& token) -> bool {
-  g_core->logging->Log(LogName::kBaNetworking, LogLevel::kDebug, [&token] {
-    return "Got V2 auth token from joiner: " + token;
-  });
-
-  auto args = PythonRef::Stolen(Py_BuildValue("(s)", token.c_str()));
+  // Include connection identity so community tickets are atomically claimed;
+  // retransmissions from this connection remain valid, other connections fail.
+  auto args = PythonRef::Stolen(Py_BuildValue("(sK)", token.c_str(),
+      static_cast<unsigned long long>(auth_connection_id_)));
   auto result = g_base->python->objs()
                     .Get(base::BasePython::ObjID::kV2AuthDataCall)
                     .Call(args);

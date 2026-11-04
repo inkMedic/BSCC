@@ -21,6 +21,7 @@
 #include "ballistica/scene_v1/connection/connection_to_host_udp.h"
 #include "ballistica/scene_v1/python/scene_v1_python.h"
 #include "ballistica/scene_v1/support/host_session.h"
+#include "ballistica/scene_v1/support/client_session_net.h"
 #include "ballistica/scene_v1/support/scene_v1_input_device_delegate.h"
 #include "ballistica/shared/foundation/event_loop.h"
 #include "ballistica/shared/python/python.h"
@@ -381,6 +382,12 @@ void ConnectionSet::PushDisconnectedFromHostCall() {
   g_base->logic->event_loop()->PushCall([this] {
     if (connection_to_host_.exists()) {
       bool was_connected = connection_to_host_->can_communicate();
+      if (auto* mode = classic::ClassicAppMode::GetActive()) {
+        // An error may already have cleared can_communicate after launching
+        // a client session. Such a session still needs to return to the menu.
+        was_connected = was_connected
+            || dynamic_cast<ClientSessionNet*>(mode->GetForegroundSession());
+      }
       connection_to_host_.Clear();
       has_connection_to_host_ = false;
 
@@ -425,6 +432,8 @@ void ConnectionSet::PushDisconnectFromHostCall() {
   g_base->logic->event_loop()->PushCall([this] {
     if (connection_to_host_.exists()) {
       connection_to_host_->RequestDisconnect();
+      // Leaving is a local action; a dead host cannot keep the UI in-party.
+      PushDisconnectedFromHostCall();
     }
   });
 }
@@ -832,9 +841,7 @@ void ConnectionSet::SetClientInfoFromMasterServer(
   // NOLINTNEXTLINE  (python doing bitwise math on signed int)
   if (!PyDict_Check(info_obj)) {
     g_core->logging->Log(LogName::kBaNetworking, LogLevel::kError,
-                         "got non-dict for master-server client info for token "
-                             + client_token + ": "
-                             + Python::ObjToString(info_obj));
+                         "got non-dict for master-server client info");
     return;
   }
   for (ConnectionToClient* client : GetConnectionsToClients()) {

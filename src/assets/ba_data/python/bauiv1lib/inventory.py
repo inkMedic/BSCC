@@ -64,6 +64,10 @@ class InventoryUIController(
         self._next_selected_profile: str | None = None
         self._player_profiles_only = player_profiles_only
         self._legacy_profiles = False
+        if getattr(bui.app.plus, 'community_online', False):
+            # Community profiles use the existing local editor and our own
+            # account sync; do not fetch the official inventory page first.
+            self._legacy_profiles = True
 
     @override
     @classmethod
@@ -81,6 +85,8 @@ class InventoryUIController(
 
     @override
     def get_cache_key_extra(self) -> str | None:
+        if getattr(bui.app.plus, 'community_online', False):
+            return None
         # We serve entirely different pages depending on these -- from
         # the same '/' request path -- so they have to partition the
         # cache.
@@ -102,16 +108,16 @@ class InventoryUIController(
         cloud_ok = False
         show_cloud_toggle = False
 
-        if self._player_profiles_only and self._legacy_profiles:
+        if getattr(bui.app.plus, 'community_online', False) or (self._player_profiles_only and self._legacy_profiles):
             # Legacy profiles alone need no cloud at all.
             response = dui2.Response(
-                page=dui2.Page(title=profstrs.title.spec, rows=[])
+                page=dui2.Page(title=profstrs.title.spec if self._player_profiles_only else invstrs.title.spec, rows=[])
             )
             # The only way here is the cloud view's 'Show Legacy
             # Profiles' toggle, so offer the way back without asking
             # the cloud. (Should it be gone by then, the cloud view
             # falls back to these same profiles, minus the toggle.)
-            show_cloud_toggle = True
+            show_cloud_toggle = not getattr(bui.app.plus, 'community_online', False)
         else:
             # The rest of our inventory (and, for new-enough servers,
             # our cloud profiles) comes from the cloud. The root page
@@ -209,6 +215,15 @@ class InventoryUIController(
                 )
                 + response.page.rows
             )
+
+        if getattr(bui.app.plus, 'community_online', False) and not self._player_profiles_only and bui.app.plus.user:
+            from bauiv1lib.community_store import catalog_rows
+            state = bui.app.plus.request_sync('GET', '/v1/economy')
+            if state['wallet'].get('purple_tickets'):
+                from bauiv1lib.community_rewards import purple_row
+                response.page.rows.append(purple_row(state['wallet']['purple_tickets']))
+            catalog = bui.app.plus.request_sync('GET', '/v1/store', authenticated=False)
+            response.page.rows += catalog_rows({item['id']: item for item in catalog['items']}, state, owned_only=True)
 
         # Profiles alone make for a short page, shown in a wider-layout
         # window (see baclassic's profile_browser_window()). Trim the
@@ -468,8 +483,8 @@ class InventoryUIController(
                             tint_texture=spazappearance.texture_spec(
                                 appearance.icon_mask_texture
                             ),
-                            tint_color=color,
-                            tint2_color=highlight,
+                            tint_color=tuple(color),
+                            tint2_color=tuple(highlight),
                         ),
                         dui2.Text(
                             # Raw profile name (+icon glyph); the

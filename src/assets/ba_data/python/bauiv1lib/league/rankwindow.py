@@ -446,7 +446,7 @@ class LeagueRankWindow(bui.MainWindow):
             )
             # Also kick off a query to v2 for latest league-president
             # info.
-            if plus.accounts.primary is not None:
+            if plus.accounts.primary is not None and not getattr(plus, 'community_online', False):
                 with plus.accounts.primary:
                     plus.cloud.send_message_cb(
                         (
@@ -888,6 +888,9 @@ class LeagueRankWindow(bui.MainWindow):
         )
 
     def _on_president_press(self) -> None:
+        if getattr(bui.app.plus, 'community_online', False):
+            bui.screenmessage(_commonassets.strings.status.unavailable_status)
+            return
         import bacommon.docui.routes.classicleaguepresidency as lroutes
 
         from bauiv1lib.league.presidency import LeaguePresidencyUIController
@@ -927,6 +930,9 @@ class LeagueRankWindow(bui.MainWindow):
     def _on_more_press(self) -> None:
         plus = bui.app.plus
         assert plus is not None
+        if getattr(plus, 'community_online', False):
+            bui.screenmessage(_commonassets.strings.status.unavailable_status)
+            return
 
         our_login_id = plus.get_v1_account_public_login_id()
         if not self._can_do_more_button or our_login_id is None:
@@ -1270,7 +1276,7 @@ class LeagueRankWindow(bui.MainWindow):
         for ach in bui.app.classic.ach.achievements:
             if ach.complete:
                 total_ach_value += ach.power_ranking_value
-        if self._season != 'a' and not self._is_current_season:
+        if getattr(plus, 'community_online', False) or (self._season != 'a' and not self._is_current_season):
             if data is not None and 'at' in data:
                 total_ach_value = data['at']
 
@@ -1391,6 +1397,9 @@ class LeagueRankWindow(bui.MainWindow):
     def _show_account_info(
         self, account_id: str, textwidget: bui.Widget
     ) -> None:
+        if getattr(bui.app.plus, 'community_online', False):
+            bui.screenmessage(_commonassets.strings.status.unavailable_status)
+            return
         from bauiv1lib.account.viewer import AccountViewerWindow
 
         bui.play_swish()

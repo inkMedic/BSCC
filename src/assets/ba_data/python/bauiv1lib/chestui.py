@@ -56,7 +56,13 @@ class ChestUIController(
     def fulfill_route(
         self, route: bacommon.docui.routes.classicchest.AnyChestRoute
     ) -> DocUIResponse:
+        if getattr(bui.app.plus, 'community_online', False):
+            from bauiv1lib.community_rewards import chest_page
+            return chest_page(route)
         return self.fulfill_request_cloud(route, 'classicchest')
+
+    def get_cache_key_extra(self):
+        return None if getattr(bui.app.plus, 'community_online', False) else ''
 
     @override
     def fulfill_unrouted_request(

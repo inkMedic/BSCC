@@ -487,27 +487,28 @@ class GetTokensWindow(bui.MainWindow):
         if not self._query_in_flight and now - self._last_query_time > 2.0:
             self._last_query_time = now
             self._query_in_flight = True
-            with plus.accounts.primary:
-                plus.cloud.send_message_cb(
-                    bacommon.cloud.StoreQueryMessage(),
-                    on_response=bui.WeakCallPartial(
-                        self._on_store_query_response
-                    ),
-                )
+            if getattr(plus, 'community_online', False):
+                plus.query_store(bui.WeakCallPartial(self._on_store_query_response))
+            else:
+                self._query_official_store()
 
         # Can't do much until we get a store state.
         if self._last_query_response is None:
             return
 
-        # If we've got a gold-pass, just show that. No need to offer any
-        # other purchases.
         if self._last_query_response.gold_pass:
             self._update_state(self.State.HAVE_GOLD_PASS)
             return
-
-        # Ok we seem to be signed in and have store stuff we can show.
-        # Do that.
         self._update_state(self.State.SHOWING_STORE)
+
+    def _query_official_store(self) -> None:
+        plus = bui.app.plus
+        assert plus is not None and plus.accounts.primary is not None
+        with plus.accounts.primary:
+            plus.cloud.send_message_cb(
+                bacommon.cloud.StoreQueryMessage(),
+                on_response=bui.WeakCallPartial(self._on_store_query_response),
+            )
 
     def _update_state(self, state: State) -> None:
 
@@ -829,7 +830,6 @@ def show_get_tokens_window(
     origin_widget: bui.Widget | None = None, toggle: bool = False
 ) -> None:
     """Transition to the get-tokens main-window from anywhere."""
-
     # NOTE TO USERS: The code below is not the standard way to do things;
     # whenever possible one should use a MainWindow's
     # main_window_replace() or main_window_back() methods or

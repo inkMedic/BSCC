@@ -1,0 +1,26 @@
+#ifndef BALLISTICA_COMMUNITY_ANDROID_CONFIG_H_
+#define BALLISTICA_COMMUNITY_ANDROID_CONFIG_H_
+#define BA_PLATFORM "android"
+#define BA_PLATFORM_ANDROID 1
+#define BA_ARCH "arm64"
+#define BA_VARIANT "generic"
+#define BA_VARIANT_GENERIC 1
+#define BA_SDL_BUILD 1
+#define BA_ENABLE_SDL_JOYSTICKS 1
+#define BA_ENABLE_OPENGL 1
+#define BA_OPENGL_IS_ES 1
+#define BA_ENABLE_AUDIO 1
+#define BA_USE_TREMOR_VORBIS 0
+#define BA_ENABLE_OS_FONT_RENDERING 1
+#define BA_MONOLITHIC_BUILD 1
+#define BA_DEFINE_MAIN 0
+#define BA_CONTAINS_PYTHON_DIST 1
+#define BA_ENABLE_EXECINFO_BACKTRACES 0
+#define BA_ENABLE_STDIO_CONSOLE 0
+#define dTRIMESH_ENABLED 1
+#if !BA_DEBUG_BUILD
+#define NDEBUG 1
+#define dNODEBUG 1
+#endif
+#include "ballistica/shared/buildconfig/buildconfig_common.h"
+#endif

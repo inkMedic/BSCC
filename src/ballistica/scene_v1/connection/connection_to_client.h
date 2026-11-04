@@ -140,6 +140,8 @@ class ConnectionToClient : public Connection {
   std::unordered_map<int, ClientInputDevice*> client_input_devices_;
   millisecs_t last_hand_shake_send_time_{};
   int id_{-1};
+  // Lifetime-unique auth identity; UDP's reusable 8-bit slot is insufficient.
+  uint64_t auth_connection_id_{};
   int build_number_{};
   bool got_client_info_{};
   std::string token_;

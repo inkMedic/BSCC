@@ -110,7 +110,7 @@ class ServerController:
         # whatever other prep stuff we need to do, but this we should
         # set immediately; otherwise unauthenticated clients can sneak
         # into auth-enabled servers while they're bootstrapping.
-        bascenev1.set_authenticate_clients(self._config.authenticate_clients)
+        bascenev1.set_authenticate_clients(True if getattr(babase.app.plus, 'community_online', False) else self._config.authenticate_clients)
 
         # Now sit around doing any pre-launch prep such as waiting for
         # account sign-in or fetching playlists; this will kick off the
@@ -267,6 +267,15 @@ class ServerController:
         plus = babase.app.plus
         assert plus is not None
 
+        if getattr(plus, 'community_online', False):
+            if self._config.playlist_code is not None:
+                raise RuntimeError('Community servers require local playlists; share codes are unsupported')
+            if not plus.server or not plus.server.registered:
+                return
+            self._prep_timer = None
+            babase.pushcall(self._launch_server_session)
+            return
+
         # Cloud connectivity is a prerequisite (v1 comms goes through this now).
         if not plus.cloud.connected:
             # Bringing up a cloud connection should not take long;
@@ -364,7 +373,7 @@ class ServerController:
         sessiontype = self._get_session_type()
 
         # (v1 sign-in state on purpose; see _prepare_to_serve().)
-        if plus.get_v1_account_state() != 'signed_in':
+        if not getattr(plus, 'community_online', False) and plus.get_v1_account_state() != 'signed_in':
             print(
                 'WARNING: launch_server_session() expects to run '
                 'with a signed in server account'
@@ -445,7 +454,7 @@ class ServerController:
 
         # Call set-enabled last (will push state to the cloud).
         bascenev1.set_public_party_max_size(self._config.max_party_size)
-        bascenev1.set_public_party_queue_enabled(self._config.enable_queue)
+        bascenev1.set_public_party_queue_enabled(False if getattr(plus, 'community_online', False) else self._config.enable_queue)
         bascenev1.set_public_party_name(self._config.party_name)
         bascenev1.set_host_password(self._config.password)
         bascenev1.set_public_party_stats_url(self._config.stats_url)
@@ -479,6 +488,6 @@ class ServerController:
             bascenev1.new_host_session(sessiontype)
 
         # Run an access check if we're trying to make a public party.
-        if self._config.party_is_public and not self._ran_access_check:
+        if self._config.party_is_public and not self._ran_access_check and not getattr(plus, 'community_online', False):
             self._run_access_check()
             self._ran_access_check = True

@@ -49,6 +49,7 @@ _TIER = 'regular'
 #: Device-native texture profile per build form factor (mirrors the
 #: runtime selection in ``Assets::PreferredTextureProfile``).
 NATIVE_TEXTURE_PROFILE_BY_FORM_FACTOR: dict[str, str] = {
+    'headless': 'null',
     'desktop': 'desktop_v1',
     'mobile': 'mobile_v1',
 }

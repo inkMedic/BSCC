@@ -13,6 +13,7 @@ namespace ballistica::scene_v1 {
 // A light source
 class LightNode : public Node {
  public:
+  ~LightNode() override;
   static auto InitType() -> NodeType*;
   explicit LightNode(Scene* scene);
   void Draw(base::FrameDef* frame_def) override;

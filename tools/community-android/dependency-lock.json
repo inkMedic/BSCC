@@ -1,0 +1,69 @@
+{
+  "upstream_commit": "d89c2d90cae1593899bd17a1510fef2465acb437",
+  "archives": [
+    {
+      "path": "build/python_deps_cache/util-linux-2.42.4.tar.xz",
+      "sha256": "fbd62a100ab7bb8746ba0661255c3c48185b1e9021507c624da01fbc696330ec"
+    },
+    {
+      "path": "build/python_deps_cache/Python-3.14.7.tar.xz",
+      "sha256": "3b48dac8fb59f62eaa67ac83c1eb12bda1b7a08406dd286e252c11a66be27f81"
+    },
+    {
+      "path": "build/python_deps_cache/xz-5.8.4.tar.xz",
+      "sha256": "4ce24038fd4221e0d13bc1a2de7a4db56e90b92b3bf75321f6c14be73f65de4b"
+    },
+    {
+      "path": "build/python_deps_cache/sqlite-autoconf-3530400.tar.gz",
+      "sha256": "0e9483900e92cd5de8fd48d16bf9200145a61f7fd5be542a5ac81d8a9516eb9c"
+    },
+    {
+      "path": "build/python_deps_cache/openssl-3.0.22.tar.gz",
+      "sha256": "67ebca7e50d17383028045486653492195b83db95f8558709701bb47b5c1ef81"
+    },
+    {
+      "path": "build/python_deps_cache/zstd-1.5.7.tar.gz",
+      "sha256": "eb33e51f49a15e023950cd7825ca74a4a2b43db8354825ac24fc1b7ee09e6fa3"
+    },
+    {
+      "path": "build/python_deps_cache/zlib-1.3.2.tar.gz",
+      "sha256": "bb329a0a2cd0274d05519d61c667c062e06990d72e125ee2dfa8de64f0119d16"
+    },
+    {
+      "path": "build/python_deps_cache/libffi-3.8.0.tar.gz",
+      "sha256": "7da3e2d9a171eb0a038f592ecad3ff2bb2550f3496d87b3b29ad0cf4430c0db4"
+    },
+    {
+      "path": "build/python_deps_cache/bzip2-1.0.8.tar.gz",
+      "sha256": "ab5a03176ee106d3f0fa90e381da478ddae405918153cca248e682cd0c4a2269"
+    },
+    {
+      "path": "build/community-downloads/gradle-8.13-bin.zip",
+      "sha256": "20f1b1176237254a6fc204d8434196fa11a4cfb387567519c61556e8710aed78"
+    },
+    {
+      "path": "build/community-downloads/SDL.tar.gz",
+      "sha256": "66c374ee7f786abcd8592d18fc5b18b1e3f1c67e923867eee5f9c503cb253afd"
+    },
+    {
+      "path": "build/community-downloads/commandlinetools-linux-13114758_latest.zip",
+      "sha256": "7ec965280a073311c339e571cd5de778b9975026cfcbe79f2b1cdcb1e15317ee"
+    },
+    {
+      "path": "build/community-downloads/vorbis.tar.gz",
+      "sha256": "0e982409a9c3fc82ee06e08205b1355e5c6aa4c36bca58146ef399621b0ce5ab"
+    },
+    {
+      "path": "build/community-downloads/ogg.tar.gz",
+      "sha256": "83e6704730683d004d20e21b8f7f55dcb3383cdf84c0daedf30bde175f774638"
+    },
+    {
+      "path": "build/openal-android/_downloads/964223349c1d11df_1.25.2.tar.gz",
+      "sha256": "fb27e5839aa11f0e5b9d33756965291fad5d6909ab928ea1f796f4a1a6877894"
+    },
+    {
+      "path": "build/openal-android/_downloads/d9a58e2aff0fd22f_1.11.0.tar.gz",
+      "sha256": "0ccf2110640a2b4489f1c93a404f2978656b434d8c5dc9cb6258f9cc95c79b15"
+    }
+  ]
+}

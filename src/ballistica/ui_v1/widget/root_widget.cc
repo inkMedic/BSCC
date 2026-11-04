@@ -2423,7 +2423,7 @@ void RootWidget::UpdateAccountButtonLabel_() {
     return;
   }
   if (account_button_signed_in_) {
-    w->SetText(g_base->assets->CharStr(base::SpecialChar::kV2Logo)
+    w->SetText(g_base->assets->CharStr(base::SpecialChar::kGooglePlayGamesLogo)
                + account_name_);
     w->set_color(0.0f, 0.4f, 0.1f, 1.0f);
     w->set_shadow(0.2f);

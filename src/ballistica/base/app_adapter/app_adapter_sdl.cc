@@ -41,6 +41,10 @@
 #include "ballistica/shared/foundation/event_loop.h"
 #include "ballistica/shared/foundation/input_types.h"
 
+#if BA_PLATFORM_ANDROID
+extern "C" bool BallisticaCommunityHasAudioFocus();
+#endif
+
 namespace ballistica::base {
 
 // Hand the OS a hardware cursor built from the engine's bundled cursor
@@ -162,11 +166,26 @@ void AppAdapterSDL::OnMainThreadStartApp() {
   // We provide our own main() (SDL_MAIN_HANDLED; see min_sdl.h), so tell SDL
   // that startup happened properly before we init.
   SDL_SetMainReady();
+#if BA_PLATFORM_ANDROID
+  // We dispatch suspend/resume explicitly so the logic and audio threads
+  // finish their suspend callbacks before Android stops the app.
+  SDL_SetHint(SDL_HINT_ANDROID_BLOCK_ON_PAUSE, "0");
+  SDL_SetHint(SDL_HINT_TOUCH_MOUSE_EVENTS, "0");
+  SDL_SetHint(SDL_HINT_MOUSE_TOUCH_EVENTS, "0");
+#endif
 
   // SDL3 functions return bool (true on success) rather than int.
   if (!SDL_Init(sdl_flags)) {
     FatalError(std::string("SDL_Init failed: ") + SDL_GetError());
   }
+#if BA_PLATFORM_ANDROID
+  if (!BallisticaCommunityHasAudioFocus()) {
+    SDL_Event focus{};
+    focus.type = SDL_EVENT_USER;
+    focus.user.code = 0x42414643;
+    SDL_PushEvent(&focus);
+  }
+#endif
 
   // Register events we can send ourself.
   sdl_runnable_event_id_ = SDL_RegisterEvents(1);
@@ -331,11 +350,11 @@ void AppAdapterSDL::ApplyGraphicsSettings(
 
   if (need_full_reload) {
     ReloadRenderer_(settings);
-  } else if (settings->fullscreen != fullscreen_) {
+  } else if ((BA_PLATFORM_ANDROID || settings->fullscreen) != fullscreen_) {
     // SDL3 takes a bool; with no fullscreen display-mode set this gives the
     // borderless 'desktop' fullscreen we used to request explicitly.
-    SDL_SetWindowFullscreen(sdl_window_, settings->fullscreen);
-    fullscreen_ = settings->fullscreen;
+    fullscreen_ = BA_PLATFORM_ANDROID || settings->fullscreen;
+    SDL_SetWindowFullscreen(sdl_window_, fullscreen_);
   }
 
   // VSync always gets set independent of the screen (though we set it down
@@ -446,7 +465,19 @@ void AppAdapterSDL::SwapBuffers_() {
     return;
   }
 #endif
+#if BA_PLATFORM_ANDROID
+  if (!SDL_GL_SwapWindow(sdl_window_) && !WindowIsInvisible_()) {
+    g_core->logging->Log(LogName::kBaGraphics, LogLevel::kWarning,
+        std::string("Android EGL swap failed; recreating context: ") + SDL_GetError());
+    SDL_GL_DestroyContext(static_cast<SDL_GLContext>(sdl_gl_context_));
+    sdl_gl_context_ = SDL_GL_CreateContext(sdl_window_);
+    if (!sdl_gl_context_) FatalError(std::string("Android EGL context recovery failed: ") + SDL_GetError());
+    g_base->graphics_server->ReloadLostRenderer();
+    UpdateScreenSizes_();
+  }
+#else
   SDL_GL_SwapWindow(sdl_window_);
+#endif
 }
 
 void AppAdapterSDL::LogEventProcessingTime_(microsecs_t duration, int count) {
@@ -497,6 +528,9 @@ void AppAdapterSDL::UpdateAppActive_() {
   // before we go active again (hiding an already-minimized window and then
   // unhiding it must not resume play).
   auto active{!hidden_ && !minimized_};
+#if BA_PLATFORM_ANDROID
+  active = active && android_audio_focus_;
+#endif
   g_core->logging->Log(LogName::kBaGraphics, LogLevel::kDebug, [this] {
     return "Window visibility: hidden=" + std::to_string(hidden_)
            + " minimized=" + std::to_string(minimized_)
@@ -657,9 +691,93 @@ static auto SDLJoystickEventToBA_(const SDL_Event& e) -> BAEvent {
   return out;
 }
 
+#if BA_PLATFORM_ANDROID
+void AppAdapterSDL::CancelAndroidTouches_() {
+  for (auto& [id, touch] : android_touches_) {
+    touch.type = TouchEvent::Type::kCanceled;
+    touch.overall = false;
+    g_base->input->PushTouchEvent(touch);
+  }
+  android_touches_.clear();
+  if (auto* loop = g_base->logic->event_loop()) {
+    loop->PushCall([] { g_base->input->ResetHoldStates(); });
+  }
+}
+#endif
+
 void AppAdapterSDL::HandleSDLEvent_(const SDL_Event& event) {
   assert(g_core->InMainThread());
   assert(g_base);
+#if BA_PLATFORM_ANDROID
+  switch (event.type) {
+    case SDL_EVENT_QUIT:
+      CancelAndroidTouches_();
+      // Activity destruction can arrive while logic is suspended. It
+      // must be running to process the engine's orderly shutdown call.
+      if (g_base->app_suspended()) g_base->UnsuspendApp();
+      break;
+    case SDL_EVENT_USER:
+      if (event.user.code == 0x42414643) {
+        android_audio_focus_ = event.user.data1 != nullptr;
+        if (!android_audio_focus_) {
+          CancelAndroidTouches_();
+          UpdateAppActive_();
+          if (!g_base->app_suspended()) g_base->SuspendApp();
+        } else if (!hidden_ && !minimized_) {
+          if (g_base->app_suspended()) g_base->UnsuspendApp();
+          UpdateAppActive_();
+        }
+        return;
+      }
+      break;
+    case SDL_EVENT_FINGER_DOWN:
+    case SDL_EVENT_FINGER_MOTION:
+    case SDL_EVENT_FINGER_UP:
+    case SDL_EVENT_FINGER_CANCELED: {
+      const auto& f = event.tfinger;
+      auto id = static_cast<uint64_t>(f.fingerID);
+      TouchEvent touch;
+      touch.touch = reinterpret_cast<void*>(static_cast<uintptr_t>(id + 1));
+      touch.x = f.x;
+      touch.y = 1.0f - f.y;
+      touch.overall = false;
+      touch.type = event.type == SDL_EVENT_FINGER_DOWN ? TouchEvent::Type::kDown
+          : event.type == SDL_EVENT_FINGER_MOTION ? TouchEvent::Type::kMoved
+          : event.type == SDL_EVENT_FINGER_UP ? TouchEvent::Type::kUp
+          : TouchEvent::Type::kCanceled;
+      if (touch.type == TouchEvent::Type::kDown) {
+        touch.overall = android_touches_.empty();
+        android_touches_[id] = touch;
+      } else if (!android_touches_.contains(id)) {
+        return;  // A late event after focus loss/cancel.
+      } else if (touch.type == TouchEvent::Type::kMoved) {
+        android_touches_[id] = touch;
+      } else {
+        android_touches_.erase(id);
+        touch.overall = android_touches_.empty();
+      }
+      g_base->input->PushTouchEvent(touch);
+      return;
+    }
+    case SDL_EVENT_WINDOW_FOCUS_LOST:
+      CancelAndroidTouches_();
+      break;
+    case SDL_EVENT_WILL_ENTER_BACKGROUND:
+      CancelAndroidTouches_();
+      hidden_ = true;
+      UpdateAppActive_();
+      if (!g_base->app_suspended()) g_base->SuspendApp();
+      return;
+    case SDL_EVENT_DID_ENTER_FOREGROUND:
+      if (android_audio_focus_ && g_base->app_suspended()) g_base->UnsuspendApp();
+      hidden_ = false;
+      minimized_ = false;
+      UpdateAppActive_();
+      UpdateScreenSizes_();
+      return;
+    default: break;
+  }
+#endif
 
   auto starttime{core::Platform::TimeMonotonicMicrosecs()};
   bool log_long_events{true};
@@ -1302,7 +1420,7 @@ void AppAdapterSDL::ReloadRenderer_(const GraphicsSettings_* settings) {
 
   // If we don't haven't yet, create our window and renderer.
   if (!sdl_window_) {
-    fullscreen_ = settings->fullscreen;
+    fullscreen_ = BA_PLATFORM_ANDROID || settings->fullscreen;
 
     // A reasonable default window size.
     int width, height;
@@ -1350,7 +1468,7 @@ void AppAdapterSDL::ReloadRenderer_(const GraphicsSettings_* settings) {
     if (!offscreen) {
       flags |= SDL_WINDOW_OPENGL;
     }
-    if (settings->fullscreen) {
+    if (fullscreen_) {
       flags |= SDL_WINDOW_FULLSCREEN;
     }
 

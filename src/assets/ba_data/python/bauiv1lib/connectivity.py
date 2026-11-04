@@ -26,6 +26,17 @@ def wait_for_connectivity(
     plus = bui.app.plus
     assert plus is not None
 
+    if getattr(plus, 'community_online', False):
+        def checked(value):
+            if isinstance(value, Exception):
+                bui.screenmessage(str(value), color=(1, .5, 0))
+                if on_cancel:
+                    on_cancel()
+            else:
+                on_connected()
+        plus.request('GET', '/health/ready', None, checked)
+        return
+
     # Quick-out: if we're already connected, don't bother with the UI.
     # We do, however, push this call instead of calling it immediately
     # so as to be consistent with the waiting path.

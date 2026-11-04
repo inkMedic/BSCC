@@ -268,6 +268,11 @@ def _bootstrap_networking() -> None:
 
 
 def _warm_start_bootstrap_connection(pool: urllib3.PoolManager) -> None:
+    # Community Android uses its own future endpoints. Keep the shared
+    # networking machinery, without pinging the official bootstrap server.
+    import os
+    if os.environ.get('BA_COMMUNITY_ANDROID') == '1' or os.environ.get('BA_COMMUNITY') == '1':
+        return
     from efro.error import is_urllib3_communication_error
     from efro.util import strip_exception_tracebacks
     from babase._logging import netlog

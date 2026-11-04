@@ -119,6 +119,8 @@ void ClassicFeatureSet::V2SetV1AccountState(const char* statestr,
     state = classic::V1LoginState::kSigningIn;
   } else if (statestr == std::string("signed_in")) {
     state = classic::V1LoginState::kSignedIn;
+  } else if (statestr == std::string("signed_out")) {
+    state = classic::V1LoginState::kSignedOut;
   } else {
     throw Exception("Invalid state value.");
   }

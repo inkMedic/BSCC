@@ -210,6 +210,9 @@ class TournamentScoresWindow(PopupWindow):
                     bui.widget(edit=txt, up_widget=self._cancel_button)
 
     def _show_player_info(self, entry: Any, textwidget: bui.Widget) -> None:
+        if getattr(bui.app.plus, 'community_online', False):
+            bui.screenmessage(_commonassets.strings.status.unavailable_status)
+            return
         from bauiv1lib.account.viewer import AccountViewerWindow
 
         # For the moment we only work if a single player-info is

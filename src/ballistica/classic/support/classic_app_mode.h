@@ -74,6 +74,7 @@ struct GameRosterEntry {
 /// Defines high level app behavior when we're active.
 class ClassicAppMode : public base::AppMode {
  public:
+  ~ClassicAppMode() override;
   /// Create or return our singleton (regardless of active state).
   /// Will never return nullptr.
   static auto GetSingleton() -> ClassicAppMode*;

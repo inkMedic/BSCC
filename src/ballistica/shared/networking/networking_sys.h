@@ -19,7 +19,7 @@
 #include <sys/socket.h>  // IWYU pragma: export
 #include <sys/types.h>
 #include <unistd.h>
-#if BA_PLATFORM_ANDROID
+#if BA_PLATFORM_ANDROID && __ANDROID_API__ < 24
 // NOTE TO SELF: Apparently once we target API 24, ifaddrs.h is available.
 #include "ballistica/core/platform/android/ifaddrs_android_ext.h"
 #else

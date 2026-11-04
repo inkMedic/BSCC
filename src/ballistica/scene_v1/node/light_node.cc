@@ -13,6 +13,7 @@
 #include "ballistica/scene_v1/support/scene.h"
 
 namespace ballistica::scene_v1 {
+LightNode::~LightNode() = default;
 
 class LightNodeType : public NodeType {
  public:

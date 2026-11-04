@@ -560,6 +560,9 @@ class MainMenuWindow(bui.MainWindow):
         )
 
     def _gather_press(self) -> None:
+        if getattr(bui.app.plus, 'community_offline', False):
+            bui.screenmessage('社区联机服务尚未接入，请选择本地游戏。', color=(1, 0.7, 0))
+            return
         # pylint: disable=cyclic-import
         from bauiv1lib.gather import GatherWindow
 

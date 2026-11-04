@@ -71,6 +71,9 @@ class Open(ChestRoute, path='/open', method=dui2.RequestMethod.POST):
     #: Tokens the player agreed to pay (0 for an unlocked chest). The
     #: open fails if the cost has since changed.
     token_payment: Annotated[int, IOAttrs('t')]
+    # Bind community opens to the displayed chest, not a later occupant.
+    chest_id: Annotated[str | None, IOAttrs('ci', store_default=False)] = None
+    request_id: Annotated[str | None, IOAttrs('ri', store_default=False)] = None
 
 
 @ioprepped

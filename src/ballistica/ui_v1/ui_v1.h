@@ -203,6 +203,7 @@ class UIV1FeatureSet : public FeatureSetNativeComponent,
 
  private:
   UIV1FeatureSet();
+  ~UIV1FeatureSet() override;
   UIAssetSet ui_assets_;
   std::unordered_map<std::string, int> ui_open_counts_;
   Object::Ref<ContainerWidget> screen_root_widget_;

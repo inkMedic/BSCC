@@ -25,6 +25,9 @@ class StoreUIController(
 ):
     """DocUI setup for store."""
 
+    def get_cache_key_extra(self):
+        return None if getattr(bui.app.plus, 'community_online', False) else ''
+
     @override
     @classmethod
     def get_route_type(
@@ -43,6 +46,11 @@ class StoreUIController(
     def fulfill_route(
         self, route: bacommon.docui.routes.classicstore.AnyStoreRoute
     ) -> DocUIResponse:
+        if getattr(bui.app.plus, 'community_online', False):
+            if not hasattr(self, '_community_attempts'):
+                self._community_attempts, self._community_quotes = {}, {}
+            from bauiv1lib.community_store import store_page
+            return store_page(self, route)
         return self.fulfill_request_cloud(route, 'classicstore')
 
     @override
@@ -79,7 +87,11 @@ class StoreUIController(
             _builtinassets.audio.error.get().play()
             return
 
-        plus.restore_purchases()
+        if getattr(plus, 'community_online', False):
+            plus.refresh_economy()
+            bui.screenmessage('正在从社区账号恢复库存与余额。')
+        else:
+            plus.restore_purchases()
 
     def _get_tokens(self, action: DocUILocalAction) -> None:
         from bauiv1lib.gettokens import show_get_tokens_window

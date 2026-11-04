@@ -1,0 +1,37 @@
+plugins { id 'com.android.application' }
+android {
+    buildFeatures { buildConfig true }
+    namespace 'org.ballistica.community'
+    compileSdk 35
+    ndkVersion '28.2.13676358'
+    defaultConfig {
+        buildConfigField 'String', 'COMMUNITY_API_URL', groovy.json.JsonOutput.toJson(System.getenv('COMMUNITY_API_URL') ?: '')
+        buildConfigField 'String', 'COMMUNITY_ALLOW_HTTP', groovy.json.JsonOutput.toJson(System.getenv('COMMUNITY_ALLOW_HTTP') ?: '0')
+        applicationId 'org.ballistica.community'
+        minSdk 24
+        targetSdk 35
+        versionCode 23079
+        versionName '1.8.5-community-dev'
+        ndk { abiFilters 'arm64-v8a' }
+        externalNativeBuild { cmake { arguments '-DANDROID_STL=c++_shared'; targets 'main', 'SDL3-shared' } }
+    }
+    buildTypes { debug { debuggable true; jniDebuggable true; signingConfig signingConfigs.debug } }
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+    externalNativeBuild { cmake { path '../native/CMakeLists.txt'; version '3.22.1' } }
+    sourceSets {
+        main {
+            java.srcDirs += ['../../build/community-deps/SDL/android-project/app/src/main/java']
+            assets.srcDirs = ['../../build/community-stage']
+        }
+    }
+    androidResources {
+        // Android's default !_* rule drops Python package directories such
+        // as zipfile/_path and babase/_generated. Keep those runtime inputs.
+        ignoreAssetsPattern = '!.svn:!.git:!.ds_store:!*.scc:.*:CVS:thumbs.db:picasa.ini:*~'
+        noCompress += ['bablob', 'json', 'py']
+    }
+    packaging { jniLibs { useLegacyPackaging = true } }
+}

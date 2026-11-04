@@ -319,6 +319,22 @@ def _run_diagnostics(weakwin: weakref.ref[NetTestingWindow]) -> None:
 
         assert bui.app.classic is not None
 
+        if getattr(plus, 'community_online', False):
+            from baplus._community_http import Transport
+            transport = Transport()
+            _print('社区网络诊断：' + transport.url)
+            _print('检查社区主服务与数据库/Redis…')
+            _print_test_results(lambda: transport.request('GET', '/health/ready'))
+            _print('获取社区服务器目录…')
+            _print_test_results(lambda: transport.request('GET', '/v1/servers'))
+            if plus.user:
+                _print('检查当前社区账号…')
+                _print_test_results(lambda: transport.request('GET', '/v1/me', token=plus._access))
+            else:
+                _print('未登录社区账号；本地游戏和本地档案仍可使用。')
+            _print('社区诊断完成。' if not have_error[0] else '社区诊断发现错误，请查看上方结果。', color=(1, .4, .3) if have_error[0] else (0, 1, 0))
+            return
+
         _print(
             f'Running network diagnostics...\n'
             f'ua: {bui.app.classic.legacy_user_agent_string}\n'

@@ -53,7 +53,7 @@ void OggStream::DoStream(char* pcm, int* size, unsigned int* rate) {
   int result;
   while ((*size) < kAudioStreamBufferSize) {
     // tremor's ov_read takes fewer args
-#if (BA_PLATFORM_IOS_TVOS || BA_PLATFORM_ANDROID)
+#if BA_USE_TREMOR_VORBIS
     result = static_cast<int>(ov_read(
         &ogg_file_, pcm + (*size), kAudioStreamBufferSize - (*size), &section));
 #else

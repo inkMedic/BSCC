@@ -484,7 +484,7 @@ def _open(target: Target, select: bool, context: DocUILocalAction) -> None:
 
             plus = bui.app.plus
             assert plus is not None
-            if plus.accounts.primary is None:
+            if plus.accounts.primary is None and not (getattr(plus, 'community_offline', False) or getattr(plus, 'community_online', False)):
                 show_sign_in_prompt(origin_widget=context.widget)
                 return
             window.main_window_replace(

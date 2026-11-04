@@ -17,10 +17,17 @@ also be built by removing this feature-set.
 # `ba*.app.plus`.
 
 import logging
+import os
 
 from baplus._cloud import CloudSubsystem
 from baplus._appsubsystem import PlusAppSubsystem
 from baplus._ads import AdsSubsystem
+
+# Selected only by our Android host, before Python initializes. The public
+# subsystem API stays in place; this implementation never starts official
+# account/cloud transports. Desktop upstream builds retain their behavior.
+if os.environ.get('BA_COMMUNITY_ANDROID') == '1' or os.environ.get('BA_COMMUNITY') == '1':
+    from baplus._community_online import CommunityOnlinePlus as PlusAppSubsystem
 
 __all__ = [
     'AdsSubsystem',

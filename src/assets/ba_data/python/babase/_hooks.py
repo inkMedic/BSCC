@@ -592,12 +592,16 @@ def v2_auth_request(
 
 
 def v2_auth_data(
-    token: str,
+    token: str, connection_id: int | None = None,
 ) -> (
     None | tuple[str, str, dict, list[str] | None, list[str] | None, str | None]
 ):
     """Look up autheneticated v2 account data via a token."""
     assert _babase.in_logic_thread()
+
+    plus = _babase.app.plus
+    if getattr(plus, 'community_online', False):
+        return plus.server.tickets.claim(token, connection_id) if plus.server else None
 
     classic = _babase.app.classic
     if classic is None:

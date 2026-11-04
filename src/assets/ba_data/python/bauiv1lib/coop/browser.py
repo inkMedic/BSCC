@@ -67,7 +67,7 @@ class CoopBrowserWindow(bui.MainWindow):
         # Quick note to players that tourneys won't work in ballistica
         # core builds. (need to split the word so it won't get subbed
         # out)
-        if 'ballistica' + 'kit' == bui.appname() and bui.do_once():
+        if not getattr(plus, 'community_online', False) and 'ballistica' + 'kit' == bui.appname() and bui.do_once():
             bui.apptimer(
                 1.0,
                 lambda: bui.screenmessage(
@@ -434,7 +434,7 @@ class CoopBrowserWindow(bui.MainWindow):
         # whatnot.
         if (
             not self._doing_tournament_query
-            and plus.cloud.connected
+            and (getattr(plus, 'community_online', False) or plus.cloud.connected)
             and (
                 self._last_tournament_query_time is None
                 or cur_time - self._last_tournament_query_time > 30.0
@@ -1166,7 +1166,7 @@ class CoopBrowserWindow(bui.MainWindow):
 
         if classic.chest_dock_full:
             ConfirmWindow(
-                _classicassets.strings.coop.chest_slots_full_warning,
+                '宝箱位已满，新奖励会保存在收件箱；打开宝箱后可以继续领取。' if getattr(bui.app.plus, 'community_online', False) else _classicassets.strings.coop.chest_slots_full_warning,
                 width=550,
                 height=140,
                 ok_text=_commonassets.strings.actions.continue_,

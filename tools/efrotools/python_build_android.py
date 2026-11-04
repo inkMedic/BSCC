@@ -167,7 +167,7 @@ def _extract(tarball: str, destdir: str) -> str:
 
 
 def _cpus() -> int:
-    return os.cpu_count() or 4
+    return max(1, int(os.environ.get('BA_BUILD_JOBS', os.cpu_count() or 4)))
 
 
 # ---------------------------------------------------------------------------
@@ -907,7 +907,15 @@ def build(rootdir: str, arch: str, debug: bool) -> None:
 
     # 4. Configure Python.
     py_short = PY_VER.replace('.', '')
-    build_python = f'/home/ubuntu/.py{py_short}/bin/python{PY_VER}'
+    build_python = os.environ.get(
+        'BA_ANDROID_BUILD_PYTHON',
+        f'/home/ubuntu/.py{py_short}/bin/python{PY_VER}',
+    )
+    if not os.path.isfile(build_python):
+        raise RuntimeError(
+            'Host build Python not found. Set BA_ANDROID_BUILD_PYTHON to '
+            f'a Linux CPython {PY_VER} executable: {build_python}'
+        )
     _configure_python(
         pydir, arch, ANDROID_API_VER, dep_sysroot, env, debug, build_python
     )

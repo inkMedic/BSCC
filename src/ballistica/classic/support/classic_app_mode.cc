@@ -90,6 +90,8 @@ struct ClassicAppMode::ScanResultsEntryPriv_ {
   int protocol_version{};
 };
 
+ClassicAppMode::~ClassicAppMode() = default;
+
 base::InputDeviceDelegate* ClassicAppMode::CreateInputDeviceDelegate(
     base::InputDevice* device) {
   // We create a special delegate for our special ClientInputDevice types;

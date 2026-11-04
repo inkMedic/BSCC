@@ -9,6 +9,7 @@
 #include <set>
 #include <string>
 #include <vector>
+#include <map>
 
 #include "ballistica/base/app_adapter/app_adapter.h"
 #include "ballistica/shared/math/vector2f.h"
@@ -78,6 +79,11 @@ class AppAdapterSDL : public AppAdapter {
   auto DoClipboardGetText() -> std::string override;
 
  private:
+#if BA_PLATFORM_ANDROID
+  void CancelAndroidTouches_();
+  std::map<uint64_t, TouchEvent> android_touches_;
+  bool android_audio_focus_{true};
+#endif
   class ScopedAllowGraphics_;
   struct GraphicsSettings_;
 
@@ -112,6 +118,9 @@ class AppAdapterSDL : public AppAdapter {
   /// Whether nothing we draw can be seen (so we skip drawing). Never true
   /// for offscreen GL runs, whose frames don't go to the window at all.
   auto WindowIsInvisible_() const -> bool {
+#if BA_PLATFORM_ANDROID
+    if (!android_audio_focus_) return true;
+#endif
     return !offscreen_gl_ && (hidden_ || minimized_);
   }
 

@@ -40,6 +40,8 @@ class AccountV1Subsystem:
         def do_auto_sign_in() -> None:
             if babase.app.plus is None:
                 return
+            if getattr(babase.app.plus, 'community_online', False):
+                return
             if babase.app.env.headless:
                 babase.app.plus.sign_in_v1('Local')
 

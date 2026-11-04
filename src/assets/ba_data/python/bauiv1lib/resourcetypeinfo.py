@@ -103,6 +103,7 @@ class ResourceTypeInfoWindow(PopupWindow):
         else:
             assert_never(resource_type)
 
+
         imgsize = 100.0
         bui.imagewidget(
             parent=self.root_widget,

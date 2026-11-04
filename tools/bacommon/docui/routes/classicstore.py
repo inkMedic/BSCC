@@ -271,8 +271,18 @@ class ProfileMigrate(
 
 
 # All routes in the family.
+@ioprepped
+@dataclass
+class CommunityPurchaseConfirm(StoreRoute, path='/community/purchase', method=dui2.RequestMethod.POST):
+    purchase_id: Annotated[str, IOAttrs('i')]
+    currency: Annotated[str, IOAttrs('c')]
+    price: Annotated[int, IOAttrs('p')]
+    request_id: Annotated[str, IOAttrs('r')]
+
+
 AnyStoreRoute = (
     Root
+    | CommunityPurchaseConfirm
     | Purchase
     | PurchaseConfirm
     | ProfileEdit

@@ -2,6 +2,7 @@ cmake_minimum_required(VERSION 3.18)
 project(BallisticaKit)
 
 option(HEADLESS "build headless server" OFF)
+option(COMMUNITY_PLUS "build source community Plus instead of official binary" OFF)
 option(DISCORD "enable Discord Social SDK integration" OFF)
 option(REQUIRE_OS_FONT_RENDERING "fail if pangocairo is not found" ON)
 option(STATIC_BUILD "build with static libs" OFF)
@@ -1158,14 +1159,23 @@ target_include_directories(ballisticakitbin PRIVATE
   ${EXTRA_INCLUDE_DIRS}
 )
 
+if(COMMUNITY_PLUS)
+  target_sources(ballisticakitbin PRIVATE ${BA_SRC_ROOT}/ballistica/plus/community_plus.cc)
+  set(BA_PLUS_LIBRARY "")
+else()
+  set(BA_PLUS_LIBRARY ${CMAKE_CURRENT_BINARY_DIR}/prefablib/libballisticaplus.a)
+endif()
 target_link_libraries(ballisticakitbin PRIVATE
-  ${CMAKE_CURRENT_BINARY_DIR}/prefablib/libballisticaplus.a ode pthread dl common_deps ba_deps Python3::Python
+  ${BA_PLUS_LIBRARY} ode pthread dl common_deps ba_deps Python3::Python
 )
 
 
 # BallisticaKit modular shared library
 # (for use with vanilla Python interpreters).
 add_library(ballisticakitso SHARED ${BALLISTICA_SOURCES})
+if(COMMUNITY_PLUS)
+  target_sources(ballisticakitso PRIVATE ${BA_SRC_ROOT}/ballistica/plus/community_plus.cc)
+endif()
 
 # This is a 'modular' build.
 target_compile_definitions(ballisticakitso PRIVATE BA_MONOLITHIC_BUILD=0)
@@ -1202,6 +1212,6 @@ target_include_directories(ballisticakitso PRIVATE
 )
 
 target_link_libraries(ballisticakitso PRIVATE
-  ${CMAKE_CURRENT_BINARY_DIR}/prefablib/libballisticaplus.a ode pthread dl common_deps ba_deps Python3::Python
+  ${BA_PLUS_LIBRARY} ode pthread dl common_deps ba_deps Python3::Python
 )
 

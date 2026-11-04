@@ -25,6 +25,7 @@ namespace ballistica::ui_v1 {
 core::CoreFeatureSet* g_core{};
 base::BaseFeatureSet* g_base{};
 UIV1FeatureSet* g_ui_v1{};
+UIV1FeatureSet::~UIV1FeatureSet() = default;
 
 UIV1FeatureSet::UIV1FeatureSet() : python(new UIV1Python()) {
   // We're a singleton. If there's already one of us, something's wrong.

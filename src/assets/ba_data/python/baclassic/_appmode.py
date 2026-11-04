@@ -4,6 +4,7 @@
 """Contains ClassicAppMode."""
 
 import os
+import time
 import logging
 import hashlib
 from functools import partial
@@ -585,6 +586,10 @@ class ClassicAppMode(AppMode):
         classic = bui.app.classic
         assert classic is not None
 
+        # Community identities do not create official cloud subscriptions.
+        community_user = plus.user if getattr(plus, 'community_online', False) else None
+        if getattr(plus, 'community_online', False):
+            account = None
         if account is not None:
             self._current_account_id = account.accountid
             self._restore_account_state()
@@ -610,6 +615,7 @@ class ClassicAppMode(AppMode):
             classic.gold_pass = False
             classic.tokens = 0
             classic.tickets = 0
+            classic.purple_tickets = 0
             classic.purchases = frozenset()
             classic.chest_dock_full = False
             classic.remove_ads = False
@@ -651,9 +657,15 @@ class ClassicAppMode(AppMode):
                 store_style='',
             )
             _baclassic.set_root_ui_chest_depictions(depictions=['', '', '', ''])
-            self._set_account_depiction('')
+            if community_user:
+                import json
+                self._set_account_depiction(json.dumps({'_t': 'n', 'j': json.dumps({'b': {'t': community_user['nickname']}}, ensure_ascii=False)}, ensure_ascii=False))
+            else:
+                self._set_account_depiction('')
             self._have_account_values = False
             self._update_ui_live_state()
+            if community_user and plus.economy:
+                plus.apply_economy(plus.economy)
 
         else:
             # Establish a subscription to inform us whenever basic stuff
@@ -671,6 +683,10 @@ class ClassicAppMode(AppMode):
         self._update_ui_live_state()
 
     def _update_ui_live_state(self) -> None:
+        plus = bui.app.plus
+        if getattr(plus, 'community_online', False):
+            _baclassic.set_have_live_account_values(bool(plus.user and plus.economy and time.monotonic() - plus.economy_received < 90))
+            return
         # We want to show ui elements faded if we don't have a live
         # connection to the master-server OR if we haven't received a
         # set of account values from them yet. If we just plug in raw
@@ -887,6 +903,14 @@ class ClassicAppMode(AppMode):
             menu_press()
 
     def _root_ui_account_press(self) -> None:
+        if getattr(bui.app.plus, 'community_online', False):
+            from bauiv1lib.community_account import CommunityAccountWindow
+            bui.app.ui_v1.auxiliary_window_activate(win_type=CommunityAccountWindow,
+                win_create_call=lambda: CommunityAccountWindow(origin_widget=bui.get_special_widget('account_button')))
+            return
+        if getattr(bui.app.plus, 'community_offline', False):
+            bui.screenmessage('当前为离线模式；社区账号尚未接入。', color=(1, 0.7, 0))
+            return
         from bauiv1lib.account.settings import AccountSettingsWindow
 
         bui.app.ui_v1.auxiliary_window_activate(
@@ -1036,6 +1060,9 @@ class ClassicAppMode(AppMode):
 
     def _ensure_signed_in(self, *, origin_widget: bui.Widget | None) -> bool:
         """Make sure we're signed in (requiring modern v2 accounts)."""
+        if getattr(bui.app.plus, 'community_offline', False):
+            bui.screenmessage('社区在线功能尚未接入。', color=(1, 0.7, 0))
+            return False
         from bauiv1lib.account.signin import show_sign_in_prompt
 
         plus = bui.app.plus

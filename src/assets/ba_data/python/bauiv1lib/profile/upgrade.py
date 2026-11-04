@@ -4,6 +4,9 @@
 
 import time
 import weakref
+import uuid
+import urllib.parse
+from types import SimpleNamespace
 from typing import TYPE_CHECKING
 
 import bacommon.classic
@@ -139,13 +142,17 @@ class ProfileUpgradeWindow(bui.Window):
         )
 
         assert plus.accounts.primary is not None
-        with plus.accounts.primary:
-            plus.cloud.send_message_cb(
-                bacommon.classic.GlobalProfileCheckMessage(self._name),
-                on_response=bui.WeakCallPartial(
-                    self._on_global_profile_check_response
-                ),
-            )
+        self._community_request_id = str(uuid.uuid4())
+        if getattr(plus, 'community_online', False):
+            def checked(value):
+                if not self._root_widget or self._root_widget.transitioning_out:
+                    return
+                self._on_global_profile_check_response(value if isinstance(value, Exception) else SimpleNamespace(**value))
+            plus.request('GET', '/v1/profiles/availability?name=' + urllib.parse.quote(self._name), None, checked, True)
+        else:
+            with plus.accounts.primary:
+                plus.cloud.send_message_cb(bacommon.classic.GlobalProfileCheckMessage(self._name),
+                    on_response=bui.WeakCallPartial(self._on_global_profile_check_response))
 
         self._status: str | None = 'waiting'
         self._update_timer = bui.AppTimer(
@@ -199,6 +206,29 @@ class ProfileUpgradeWindow(bui.Window):
                 )
 
     def _on_upgrade_press(self) -> None:
+        plus = bui.app.plus
+        if getattr(plus, 'community_online', False):
+            if self._status is not None or self._cost is None:
+                return
+            editor = self._edit_profile_window()
+            if editor is None or not editor.save(transition_out=False):
+                return
+            plus.run_v1_account_transactions()
+            self._status = 'community_upgrading'
+            def finished(value):
+                if not self._root_widget or self._root_widget.transitioning_out:
+                    return
+                if isinstance(value, Exception):
+                    self._status = None
+                    bui.textwidget(edit=self._status_text, text=str(value), color=(1, .5, 0))
+                    return
+                self._status = 'exiting'
+                bui.containerwidget(edit=self._root_widget, transition='out_right')
+                original = self._edit_profile_window()
+                if original:
+                    original.reload_window()
+            plus.request('POST', '/v1/profiles/upgrade', dict(request_id=self._community_request_id, name=self._name, expected_price=self._cost), finished, True)
+            return
 
         if self._status is None:
             plus = bui.app.plus

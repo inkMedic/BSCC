@@ -78,6 +78,7 @@ class CoopSession(Session):
             classic.coop_session_args['campaign']
         )
         self.campaign_level_name: str = classic.coop_session_args['level']
+        self.community_tournament_entry_id = classic.coop_session_args.get('community_tournament_entry_id')
 
         self._ran_tutorial_activity = False
         self._tutorial_activity: bascenev1.Activity | None = None

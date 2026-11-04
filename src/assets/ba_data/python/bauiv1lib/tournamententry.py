@@ -3,6 +3,7 @@
 """Defines a popup window for entering tournaments."""
 
 import logging
+import uuid
 from typing import TYPE_CHECKING, override
 
 from bacommon.analytics import ClassicAnalyticsEvent
@@ -42,6 +43,7 @@ class TournamentEntryWindow(PopupWindow):
 
         self._idprefix = bui.app.ui_v1.new_id_prefix('tournamententry')
         self._tournament_id = tournament_id
+        self._community_entry_request = str(uuid.uuid4())
         self._tournament_info = bui.app.classic.accounts.tournament_info[
             self._tournament_id
         ]
@@ -592,6 +594,12 @@ class TournamentEntryWindow(PopupWindow):
             return
         self._launched = True
         launched = False
+        plus = bui.app.plus
+        community_entry_id = None
+        if getattr(plus, 'community_online', False) and not practice:
+            community_entry_id = plus._tournament_entries[self._tournament_id]['entry_id']
+        if getattr(plus, 'community_online', False) and self._tournament_activity is not None:
+            self._tournament_activity.session.community_tournament_entry_id = community_entry_id
 
         bui.app.analytics.submit_event(
             ClassicAnalyticsEvent(
@@ -653,6 +661,7 @@ class TournamentEntryWindow(PopupWindow):
                             'max_players': self._tournament_info['maxPlayers'],
                             'tournament_id': self._tournament_id,
                             'submit_score': not practice,
+                            'community_tournament_entry_id': community_entry_id,
                         },
                     )
                     if bui.app.classic is not None
@@ -717,6 +726,18 @@ class TournamentEntryWindow(PopupWindow):
 
         cur_time = bui.apptime()
         self._last_ticket_press_time = cur_time
+
+        if getattr(plus, 'community_online', False):
+            self._entering = True
+            def entered(value):
+                if isinstance(value, Exception):
+                    self._entering = False
+                    bui.screenmessage(str(value), color=(1, .5, 0))
+                    return
+                if self.root_widget and not self._transitioning_out:
+                    self._launch()
+            plus.enter_tournament(self._tournament_id, self._community_entry_request, entered)
+            return
 
         if self._purchase_name is not None:
             assert isinstance(ticket_cost, int)

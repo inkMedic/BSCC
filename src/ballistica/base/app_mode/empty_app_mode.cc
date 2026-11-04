@@ -10,6 +10,7 @@ namespace ballistica::base {
 static EmptyAppMode* g_empty_app_mode{};
 
 EmptyAppMode::EmptyAppMode() = default;
+EmptyAppMode::~EmptyAppMode() = default;
 
 auto EmptyAppMode::GetSingleton() -> EmptyAppMode* {
   assert(g_base == nullptr || g_base->InLogicThread());

@@ -296,10 +296,19 @@ class MultiTeamSession(Session):
             self.stats.setactivity(next_game)
 
             # Now flip the current activity.
+            plus = babase.app.plus
+            if getattr(plus, 'community_online', False) and plus.server:
+                plus.server.record_match_start(next_game, self.sessionplayers)
             self.setactivity(next_game)
 
         # If we're leaving a round, go to the score screen.
         else:
+            plus = babase.app.plus
+            if getattr(plus, 'community_online', False) and plus.server:
+                try:
+                    plus.server.record_match_end(activity, results)
+                except Exception:
+                    logging.exception('Community result reporting failed')
             self._switch_to_score_screen(results)
 
     def _switch_to_score_screen(self, results: Any) -> None:

@@ -209,9 +209,8 @@ class GatherWindow(bui.MainWindow):
                     _classicassets.strings.gather.public,
                 )
             )
-        tabdefs.append(
-            (self.TabID.PRIVATE, _classicassets.strings.gather.private)
-        )
+        if not getattr(plus, 'community_online', False):
+            tabdefs.append((self.TabID.PRIVATE, _classicassets.strings.gather.private))
         tabdefs.append(
             (self.TabID.NEARBY, _classicassets.strings.gather.nearby)
         )
@@ -370,7 +369,7 @@ class GatherWindow(bui.MainWindow):
             for tab in self._tabs.values():
                 tab.restore_state()
 
-            current_tab = self.TabID.ABOUT
+            current_tab = self.TabID.INTERNET if getattr(bui.app.plus, 'community_online', False) else self.TabID.ABOUT
             gather_tab_val = bui.app.config.get('Gather Tab')
             try:
                 stored_tab = self.TabID(gather_tab_val)

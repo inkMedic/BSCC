@@ -141,3 +141,13 @@ BallisticaKit.ico
 # local checkouts may have them as symlinks to elsewhere.
 /CLAUDE.md
 /.claude/
+
+# Community service secrets and local dependency/build products.
+/artifacts/
+/community-backend/.env
+/community-backend/.venv/
+/community-backend/*.egg-info/
+/community-backend/.pytest_cache/
+/community-backend/**/__pycache__/
+/artifacts/community/**/.env
+/artifacts/community/lan/.device-account.json

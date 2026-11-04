@@ -1,0 +1,68 @@
+cmake_minimum_required(VERSION 3.22.1)
+project(BallisticaCommunity LANGUAGES C CXX)
+if(NOT ANDROID OR NOT ANDROID_ABI STREQUAL "arm64-v8a")
+  message(FATAL_ERROR "Use the Linux Android NDK toolchain with arm64-v8a")
+endif()
+set(CMAKE_CXX_STANDARD 23)
+set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+set_property(GLOBAL PROPERTY JOB_POOLS community_compile=6 community_link=1)
+set(CMAKE_JOB_POOL_COMPILE community_compile)
+set(CMAKE_JOB_POOL_LINK community_link)
+get_filename_component(ROOT "${CMAKE_CURRENT_LIST_DIR}/../.." ABSOLUTE)
+set(DEPS "${ROOT}/build/community-deps")
+set(PYROOT "${ROOT}/build/python_android_arm64_debug/build/usr")
+set(PYSYSROOT "${ROOT}/build/python_android_arm64_debug/src/Python-3.14.7/Android/sysroot/usr")
+foreach(required "${PYROOT}/lib/libpython3.14d.a" "${DEPS}/SDL/CMakeLists.txt")
+  if(NOT EXISTS "${required}")
+    message(FATAL_ERROR "Missing built dependency: ${required}; run tools/community-android/build.ps1")
+  endif()
+endforeach()
+set(SDL_SHARED ON CACHE BOOL "" FORCE)
+set(SDL_STATIC OFF CACHE BOOL "" FORCE)
+set(SDL_TEST_LIBRARY OFF CACHE BOOL "" FORCE)
+add_subdirectory("${DEPS}/SDL" "${CMAKE_BINARY_DIR}/sdl")
+add_library(common_deps INTERFACE)
+set(BA_SRC_ROOT "${ROOT}/src")
+set(ODE_SRC_ROOT "${BA_SRC_ROOT}/external/open_dynamics_engine-ef")
+target_include_directories(common_deps INTERFACE "${BA_SRC_ROOT}")
+target_compile_options(common_deps INTERFACE -include "${CMAKE_CURRENT_LIST_DIR}/buildconfig_android.h")
+target_compile_definitions(common_deps INTERFACE $<$<CONFIG:Debug>:BA_DEBUG_BUILD=1>)
+# Reuse the fixed upstream source lists, without evaluating its desktop
+# dependency lookups or its mandatory proprietary Plus linkage.
+file(READ "${ROOT}/ballisticakit-cmake/CMakeLists.txt" upstream)
+function(source_block start_text output)
+  string(FIND "${upstream}" "${start_text}" start)
+  if(start LESS 0)
+    message(FATAL_ERROR "Pinned upstream source-list format changed")
+  endif()
+  string(SUBSTRING "${upstream}" ${start} -1 rest)
+  string(FIND "${rest}" "\n)" end)
+  if(end LESS 0)
+    message(FATAL_ERROR "Unterminated upstream source list")
+  endif()
+  math(EXPR length "${end} + 2")
+  string(SUBSTRING "${rest}" 0 ${length} block)
+  set(${output} "${block}" PARENT_SCOPE)
+endfunction()
+source_block("add_library(ode\n" ode_block)
+source_block("set(BALLISTICA_SOURCES\n" engine_block)
+file(WRITE "${CMAKE_BINARY_DIR}/upstream-sources.cmake" "${ode_block}\n${engine_block}\n")
+include("${CMAKE_BINARY_DIR}/upstream-sources.cmake")
+# The public typed Android bus targets the absent private Java host. SDL's
+# JNI/input/lifecycle bridge is the host for this application instead.
+list(FILTER BALLISTICA_SOURCES EXCLUDE REGEX "/base/platform/android/android_message_bus\\.")
+target_include_directories(ode PRIVATE "${ODE_SRC_ROOT}")
+target_link_libraries(ode PRIVATE common_deps)
+add_library(main SHARED ${BALLISTICA_SOURCES} main.cc "${BA_SRC_ROOT}/ballistica/plus/community_plus.cc"
+  "${BA_SRC_ROOT}/ballistica/core/platform/android/platform_android.cc")
+target_include_directories(main PRIVATE
+  "${ODE_SRC_ROOT}" "${PYROOT}/include/python3.14d"
+  "${DEPS}/prefix/include" "${DEPS}/prefix/include/AL" "${BA_SRC_ROOT}/external/zstd/include")
+file(GLOB PYDEPENDENCIES "${PYSYSROOT}/lib/*.a")
+target_link_libraries(main PRIVATE common_deps ode SDL3::SDL3
+  "-Wl,--start-group" "${PYROOT}/lib/libpython3.14d.a" ${PYDEPENDENCIES}
+  "${DEPS}/prefix/lib/libvorbisfile.a" "${DEPS}/prefix/lib/libvorbis.a"
+  "${DEPS}/prefix/lib/libogg.a" "${DEPS}/prefix/lib/libopenal.a"
+  "${DEPS}/prefix/lib/liboboe.a" "-Wl,--end-group"
+  GLESv3 EGL android log OpenSLES dl z m)
+target_link_options(main PRIVATE "-Wl,-z,max-page-size=16384" "-Wl,--no-undefined")

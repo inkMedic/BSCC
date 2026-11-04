@@ -2,7 +2,7 @@
 
 #include "ballistica/base/support/base_build_switches.h"
 
-#if BA_PLATFORM_ANDROID
+#if BA_PLATFORM_ANDROID && !BA_SDL_BUILD
 #include "ballistica/base/app_adapter/app_adapter_android.h"
 #endif
 #include "ballistica/base/app_adapter/app_adapter_apple.h"  // IWYU pragma: keep.
@@ -96,7 +96,7 @@ auto BaseBuildSwitches::CreateAppAdapter() -> AppAdapter* {
 
 #if BA_HEADLESS_BUILD
   app_adapter = new AppAdapterHeadless();
-#elif BA_PLATFORM_ANDROID
+#elif BA_PLATFORM_ANDROID && !BA_SDL_BUILD
   app_adapter = new AppAdapterAndroid();
 #elif BA_XCODE_BUILD
   app_adapter = new AppAdapterApple();

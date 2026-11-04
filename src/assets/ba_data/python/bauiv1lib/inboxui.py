@@ -41,7 +41,13 @@ class InboxUIController(
     def fulfill_route(
         self, route: bacommon.docui.routes.classicinbox.AnyInboxRoute
     ) -> DocUIResponse:
+        if getattr(bui.app.plus, 'community_online', False):
+            from bauiv1lib.community_rewards import inbox_page
+            return inbox_page(route)
         return self.fulfill_request_cloud(route, 'classicinbox')
+
+    def get_cache_key_extra(self):
+        return None if getattr(bui.app.plus, 'community_online', False) else ''
 
     @override
     def fulfill_unrouted_request(

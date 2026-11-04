@@ -56,6 +56,7 @@ class PartyEntry:
     ping_responses: int = 0
     stats_addr: str | None = None
     clean_display_index: int | None = None
+    community_server: dict | None = None
 
     def get_key(self) -> str:
         """Return the key used to store this party."""
@@ -401,6 +402,7 @@ class PublicGatherTab(GatherTab):
         self._join_sub_scroll_width: float | None = None
         self._host_status_text: bui.Widget | None = None
         self._signed_in = False
+        self._joining = False
         self._ui_rows: list[UIRow] = []
         self._refresh_ui_row = 0
         self._have_user_selected_row = False
@@ -514,6 +516,9 @@ class PublicGatherTab(GatherTab):
 
     @override
     def on_deactivate(self) -> None:
+        plus = bui.app.plus
+        if getattr(plus, 'community_online', False) and not self._joining:
+            plus.cancel_join()
         self._update_timer = None
 
     @override
@@ -736,6 +741,10 @@ class PublicGatherTab(GatherTab):
     def _build_host_tab(
         self, region_width: float, region_height: float
     ) -> None:
+        if getattr(bui.app.plus, 'community_online', False):
+            bui.textwidget(parent=self._container, position=(40, region_height - 100), size=(region_width - 80, 60),
+                text='社区公开目录由账号主服务管理。\n发布房间需使用管理员注册的专用服务器；本地玩法无需发布。', scale=.8)
+            return
         c_width = region_width
         c_height = region_height - 20
         v = c_height - 35
@@ -1196,6 +1205,7 @@ class PublicGatherTab(GatherTab):
             party.queue = party_in.get('q')
             assert isinstance(party.queue, str | None)
             party.port = port
+            party.community_server = party_in.get('community_server')
             party.name = party_in['n']
             assert isinstance(party.name, str)
             party.size = party_in['s']
@@ -1237,7 +1247,7 @@ class PublicGatherTab(GatherTab):
         # If signed out or errored, show no parties. (v1 sign-in state
         # on purpose; see _update().)
         if (
-            plus.get_v1_account_state() != 'signed_in'
+            (plus.get_v1_account_state() != 'signed_in' and not getattr(plus, 'community_online', False))
             or not self._have_valid_server_list
         ):
             self._parties_displayed = {}
@@ -1287,6 +1297,17 @@ class PublicGatherTab(GatherTab):
             * plus.get_v1_account_misc_read_val('pubPartyRefreshMS', 10000)
         ):
             self._last_server_list_query_time = now
+            if getattr(plus, 'community_online', False):
+                def received(value):
+                    if isinstance(value, Exception):
+                        self._on_public_party_query_result(None)
+                        return
+                    self._on_public_party_query_result({'l': [
+                        {'a': server['address'], 'p': server['port'], 'n': server['name'],
+                         's': server['players'], 'sm': server['capacity'], 'pd': 0, 'pi': 3000,
+                         'sa': None, 'community_server': server} for server in value['servers']]})
+                plus.request('GET', '/v1/servers', None, received)
+                return
             if DEBUG_SERVER_COMMUNICATION:
                 print('REQUESTING SERVER LIST')
             # (v1 sign-in state on purpose: this query is a v1
@@ -1438,6 +1459,9 @@ class PublicGatherTab(GatherTab):
         )
 
     def _on_start_advertizing_press(self) -> None:
+        if getattr(bui.app.plus, 'community_online', False):
+            bui.screenmessage('公开发布需使用管理员注册的专用服务器；本地游戏无需发布。', color=(1, .7, 0))
+            return
         from bauiv1lib.account.signin import show_sign_in_prompt
 
         plus = bui.app.plus
@@ -1509,6 +1533,33 @@ class PublicGatherTab(GatherTab):
 
     def on_public_party_activate(self, party: PartyEntry) -> None:
         """Called when a party is clicked or otherwise activated."""
+        plus = bui.app.plus
+        if getattr(plus, 'community_online', False):
+            if not plus.accounts.primary:
+                from bauiv1lib.account.signin import show_sign_in_prompt
+                show_sign_in_prompt()
+                return
+            now = time.time()
+            if self._last_connect_attempt_time and now - self._last_connect_attempt_time < 2:
+                return
+            self._last_connect_attempt_time = now
+            if not party.community_server:
+                bui.screenmessage('服务器信息已失效，请刷新列表。', color=(1, .5, 0))
+                return
+            bui.screenmessage('正在准备入房认证…')
+            def prepared(value):
+                if not self._container or not self.window.main_window_has_control():
+                    plus.cancel_join()
+                    return
+                if isinstance(value, Exception):
+                    bui.screenmessage(str(value), color=(1, .5, 0))
+                    return
+                if bs.app.classic:
+                    bs.app.classic.save_ui_state()
+                self._joining = True
+                bs.connect_to_party(value['address'], port=value['port'])
+            plus.prepare_join(party.community_server, prepared)
+            return
         self.save_state()
 
         bui.app.analytics.submit_event(
