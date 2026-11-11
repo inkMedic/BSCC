@@ -5,6 +5,10 @@ on:
     tags:
       - "v*"
 
+permissions:
+  contents: write
+  packages: write
+
 jobs:
   create_release:
     runs-on: ubuntu-latest
@@ -541,3 +545,110 @@ jobs:
           git add -A
           git commit -m "Update flathub manifest to release ${{ github.ref_name }}"
           git push origin net.froemling.bombsquad
+
+  ################################################################################
+  #                                                                              #
+  #                              Community Mobile                               #
+  #                                                                              #
+  ################################################################################
+
+  release_community_ios:
+    name: Community iOS (unsigned ARM64 IPA)
+    runs-on: macos-14
+    timeout-minutes: 360
+    steps:
+      - uses: actions/checkout@v7
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.14"
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v8.1.0
+        with:
+          enable-cache: true
+      - name: Set up build environment
+        run: make env VENV_LOCK=pconfig/requirements_build_lock.txt
+      - name: Build unsigned iOS IPA
+        env:
+          COMMUNITY_API_URL: ${{ vars.COMMUNITY_API_URL }}
+        run: |
+          args=(--sdk iphoneos --configuration Release)
+          if [[ -n "${COMMUNITY_API_URL:-}" ]]; then
+            args+=(--api-url "$COMMUNITY_API_URL")
+          fi
+          .venv/bin/python tools/community-ios/build.py "${args[@]}"
+      - name: Upload iOS package to Release
+        uses: ncipollo/release-action@v1
+        with:
+          allowUpdates: true
+          omitBody: true
+          artifacts: artifacts/ios/ballistica-community-arm64-unsigned.ipa,artifacts/ios/ballistica-community-arm64-unsigned.json
+
+  release_community_android:
+    name: Community Android (ARM64 debug APK)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 360
+    steps:
+      - uses: actions/checkout@v7
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.14"
+      - name: Set up Java
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: "21"
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v8.1.0
+        with:
+          enable-cache: true
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+      - name: Install Android SDK components
+        run: |
+          yes | sdkmanager --licenses >/dev/null || true
+          sdkmanager \
+            "platform-tools" \
+            "platforms;android-35" \
+            "build-tools;35.0.0" \
+            "ndk;28.2.13676358" \
+            "cmake;3.22.1"
+      - name: Set up Python and generate sources
+        run: |
+          make env VENV_LOCK=pconfig/requirements_build_lock.txt
+          make codegen VENV_LOCK=pconfig/requirements_build_lock.txt
+      - name: Prepare verified community assets
+        run: .venv/bin/python tools/community-android/ensure-assets.py
+      - name: Build Android native dependencies
+        run: |
+          for stage in sources python audio stage; do
+            .venv/bin/python -u tools/community-android/dependencies.py "$stage"
+          done
+      - name: Build debug APK
+        env:
+          COMMUNITY_API_URL: ${{ vars.COMMUNITY_API_URL }}
+        run: |
+          export ANDROID_SDK_ROOT="${ANDROID_SDK_ROOT:-$ANDROID_HOME}"
+          mkdir -p build/community-downloads build/community-deps
+          curl --fail --location --retry 2 \
+            https://services.gradle.org/distributions/gradle-8.13-bin.zip \
+            -o build/community-downloads/gradle-8.13-bin.zip
+          unzip -q -n build/community-downloads/gradle-8.13-bin.zip -d build/community-deps
+          printf 'sdk.dir=%s\n' "$ANDROID_SDK_ROOT" > ballisticakit-android/local.properties
+          build/community-deps/gradle-8.13/bin/gradle --no-daemon -p ballisticakit-android :BallisticaKit:assembleDebug
+      - name: Verify APK
+        run: |
+          mkdir -p artifacts/android
+          cp ballisticakit-android/BallisticaKit/build/outputs/apk/debug/BallisticaKit-debug.apk \
+            artifacts/android/ballistica-community-arm64-debug.apk
+          sha256sum artifacts/android/ballistica-community-arm64-debug.apk > artifacts/android/apk-sha256.txt
+          .venv/bin/python tools/community-android/verify-apk.py \
+            artifacts/android/ballistica-community-arm64-debug.apk \
+            > artifacts/android/apk-verification.json
+      - name: Upload Android package to Release
+        uses: ncipollo/release-action@v1
+        with:
+          allowUpdates: true
+          omitBody: true
+          artifacts: artifacts/android/ballistica-community-arm64-debug.apk,artifacts/android/apk-sha256.txt,artifacts/android/apk-verification.json
