@@ -588,6 +588,20 @@ class GetTokensWindow(bui.MainWindow):
             b for b in self._buttondefs if b.itemid in available_purchases
         ]
 
+        # A community server can return a successful but empty catalog
+        # when its development currency packs are disabled.
+        if (
+            getattr(plus, 'community_online', False)
+            and response.result is response.Result.SUCCESS
+            and not response.available_purchases
+        ):
+            bui.textwidget(
+                edit=self._status_text,
+                text='当前社区服务器未开放测试代币包。',
+                color=(1, 0.7, 0),
+            )
+            return
+
         # Fail if something errored server-side or they didn't send us
         # anything we can show.
         if (

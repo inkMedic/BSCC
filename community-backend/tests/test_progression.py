@@ -35,6 +35,29 @@ def buy(client, account, item, currency='test', price=0, request_id=None):
     return client.post('/v1/store/purchase', headers=auth(account), json=dict(request_id=request_id or str(uuid.uuid4()), item_id=item, currency=currency, expected_price=price))
 
 
+def test_solo_progress_is_private_and_rejects_stale_revisions(context):
+    client, (a, b, _), _, _ = context
+    url = '/v1/me/solo-progress'
+    empty = {'revision': 0, 'progress': {'achievements': [], 'campaigns': {}}}
+    assert client.get(url).status_code == 401
+    assert client.get(url, headers=auth(a)).json() == empty
+    progress = {
+        'achievements': ['First Victory'],
+        'campaigns': {'Easy': {'Test Level': {
+            'complete': True, 'rating': 0.0, 'lower_is_better': False,
+            'scores': {'': {'1 Player': [[42, {'players': [
+                {'name': 'Player', 'character': 'Spaz'},
+            ]}]]}},
+        }}},
+    }
+    saved = client.put(url, headers=auth(a), json={'revision': 0, 'progress': progress})
+    assert saved.status_code == 200, saved.text
+    assert saved.json() == {'revision': 1, 'progress': progress}
+    assert client.put(url, headers=auth(a), json=empty).json() == saved.json()
+    assert client.get(url, headers=auth(b)).json() == empty
+    assert client.get(url, headers=auth(a)).json() == saved.json()
+
+
 def test_shop_atomic_deduction_inventory_and_test_currency(context):
     client, (a, b, card), _, _ = context
     assert client.get('/v1/economy', headers=auth(a)).json()['wallet']['tokens'] == 0

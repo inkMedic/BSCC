@@ -23,7 +23,10 @@ from starlette.concurrency import run_in_threadpool
 
 from .config import Settings
 from .models import User, Server, Instance, GlobalProfile, Ownership
-from .schemas import Login, Register, Refresh, ServerRegister, Join, Control, PartyState, PlayerProfile
+from .schemas import (
+    Login, Register, Refresh, ServerRegister, Join, Control, PartyState,
+    PlayerProfile, SoloProgress, SoloProgressSync,
+)
 from .security import digest, token, passwords
 
 log = logging.getLogger('community')
@@ -227,6 +230,36 @@ def create_app(settings=None):
     @app.get('/v1/me')
     async def me(identity=Depends(current_user)):
         return profile(identity[0])
+
+    def solo_progress_response(user):
+        return {
+            'revision': user.solo_progress_revision,
+            'progress': user.solo_progress or SoloProgress().model_dump(),
+        }
+
+    @app.get('/v1/me/solo-progress')
+    async def get_solo_progress(identity=Depends(current_user)):
+        return solo_progress_response(identity[0])
+
+    @app.put('/v1/me/solo-progress')
+    async def save_solo_progress(body: SoloProgressSync, identity=Depends(current_user)):
+        progress = body.progress.model_dump(mode='json')
+        if len(body.progress.model_dump_json().encode()) > 1024 * 1024:
+            raise APIError('progress_too_large', 413)
+        async with sessions() as db:
+            user = await db.scalar(
+                select(User).where(User.id == identity[0].id).with_for_update()
+            )
+            # Return the winning snapshot when another device saved first.
+            # The client merges it with its local progress before retrying.
+            current = solo_progress_response(user)
+            if body.revision == current['revision'] and progress != current['progress']:
+                user.solo_progress = progress
+                user.solo_progress_revision += 1
+                result = solo_progress_response(user)
+                await db.commit()
+                return result
+            return current
 
     def profile_name(name):
         if not name.strip() or len(name) > 64 or (name.startswith('__') and name != '__account__'):

@@ -1,3 +1,5 @@
+社区 iOS 构建入口与真机验收说明见 [docs/ios-community-build.md](docs/ios-community-build.md)。
+
 <img
 src="https://files.ballistica.net/ballistica_media/ballistica_logo_half.png"
 height="50" alt="logo">

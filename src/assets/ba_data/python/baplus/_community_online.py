@@ -13,6 +13,7 @@ import babase
 import _baplus
 from baplus._community import CommunityPlusAppSubsystem, OfflineAccounts
 from baplus._community_http import Transport, CommunityError
+from baplus import _community_progress as solo
 
 COMPATIBILITY = dict(engine_build=23079, scene_protocol=57, community_protocol=1, assets='23079')
 
@@ -67,6 +68,8 @@ class CommunityOnlinePlus(CommunityPlusAppSubsystem):
         self.economy = None
         self.economy_received = 0.0
         self._economy_timer = None
+        self._solo_revision = 0
+        self._solo_sync_in_flight = False
         self._session_lock = threading.RLock()
         self._executor = concurrent.futures.ThreadPoolExecutor(max_workers=1, thread_name_prefix='community')
 
@@ -92,22 +95,30 @@ class CommunityOnlinePlus(CommunityPlusAppSubsystem):
             babase.pushcall(babase.app.on_initial_sign_in_complete)
 
     def on_app_loading(self):
-        if 'Player Profiles' not in babase.app.config:
-            babase.app.config['Player Profiles'] = {}
-            babase.app.config.commit()
+        config = babase.app.config
+        config.setdefault('Player Profiles', {})
+        owner = config.get(solo.OWNER_KEY, config.get('Community Profile Owner'))
+        solo.select_progress(config, owner or '')
         if os.environ.get('COMMUNITY_SERVER_KEY'):
+            solo.select_progress(config, '')
             from baplus._community_server import CommunityServer
             self.server = CommunityServer()
             self._notify_initial()
             return
         if not os.environ.get('COMMUNITY_API_URL'):
+            solo.select_progress(config, '')
             self._notify_initial()
             return
+        self._restore_session()
+        # Network/DNS failure cannot indefinitely stall local startup.
+        babase.apptimer(8, self._notify_initial)
+
+    def _restore_session(self):
         self.state = 'restoring'
 
         generation = self._generation
         def restore():
-            saved = _baplus.secure_refresh() if os.environ.get('BA_COMMUNITY_ANDROID') == '1' else None
+            saved = _baplus.secure_refresh() if (os.environ.get('BA_COMMUNITY_ANDROID') == '1' or os.environ.get('BA_COMMUNITY_IOS') == '1') else None
             if not saved:
                 return None
             result = Transport().request('POST', '/v1/auth/refresh', {'refresh_token': saved})
@@ -122,10 +133,16 @@ class CommunityOnlinePlus(CommunityPlusAppSubsystem):
                 self._accept(result)
             else:
                 self.state = 'signed_out'
+                # A temporary connection failure keeps the last verified
+                # account's local save available while the device is offline.
+                if result is None or (
+                    isinstance(result, CommunityError)
+                    and result.code in ('credentials_invalid', 'login_expired',
+                                        'refresh_reused', 'account_disabled')
+                ):
+                    solo.select_progress(babase.app.config, '')
             self._notify_initial()
         self._submit(restore, restored)
-        # Network/DNS failure cannot indefinitely stall local startup.
-        babase.apptimer(8, self._notify_initial)
 
     def on_app_mode_activated(self):
         super().on_app_mode_activated()
@@ -139,6 +156,39 @@ class CommunityOnlinePlus(CommunityPlusAppSubsystem):
     def refresh_economy(self):
         if self.user:
             self.request('GET', '/v1/economy', None, lambda _: None, True)
+            self._sync_solo_progress()
+        elif self.state == 'signed_out' and babase.app.config.get(solo.OWNER_KEY):
+            self._restore_session()
+
+    def _sync_solo_progress(self):
+        classic = babase.app.classic
+        if self.user is None or classic is None or self._solo_sync_in_flight:
+            return
+        config = babase.app.config
+        if config.get(solo.OWNER_KEY) != self.user['uid']:
+            return
+        generation = self._generation
+        progress = solo.snapshot(config, classic.campaigns)
+        self._solo_sync_in_flight = True
+
+        def synced(result):
+            if generation != self._generation:
+                return
+            self._solo_sync_in_flight = False
+            if isinstance(result, Exception):
+                # Local state is durable. The next economy refresh retries.
+                return
+            self._solo_revision = result['revision']
+            latest = solo.snapshot(config, classic.campaigns)
+            merged = solo.merge_progress(latest, result['progress'])
+            if merged != latest:
+                solo.apply_progress(config, merged)
+            if merged != result['progress']:
+                self._sync_solo_progress()
+
+        self.request('PUT', '/v1/me/solo-progress',
+                     {'revision': self._solo_revision, 'progress': progress},
+                     synced, True)
 
     def query_store(self, callback):
         import bacommon.cloud
@@ -286,7 +336,9 @@ class CommunityOnlinePlus(CommunityPlusAppSubsystem):
         profiles.update(self.user.get('player_profiles', {}))
         config['Player Profiles'] = profiles
         config['Community Profile Owner'] = self.user['uid']
-        config.commit()
+        solo.select_progress(config, self.user['uid'])
+        self._solo_revision = 0
+        self._solo_sync_in_flight = False
         self.state = 'signed_in'
         self._account_state_num += 1
         # Official AccountV2Handle semantics are deliberately not impersonated.
@@ -318,7 +370,7 @@ class CommunityOnlinePlus(CommunityPlusAppSubsystem):
                 if generation != self._generation:
                     Transport().request('POST', '/v1/auth/logout', {}, result['access_token'])
                     raise CommunityError('登录已取消')
-                if os.environ.get('BA_COMMUNITY_ANDROID') == '1':
+                if (os.environ.get('BA_COMMUNITY_ANDROID') == '1' or os.environ.get('BA_COMMUNITY_IOS') == '1'):
                     _baplus.secure_refresh(result['refresh_token'])
             return result
 
@@ -362,7 +414,7 @@ class CommunityOnlinePlus(CommunityPlusAppSubsystem):
                     raise CommunityError('账号已切换')
                 self._access, self._refresh = result['access_token'], result['refresh_token']
                 self._expires = time.monotonic() + result['expires_in']
-                if os.environ.get('BA_COMMUNITY_ANDROID') == '1':
+                if (os.environ.get('BA_COMMUNITY_ANDROID') == '1' or os.environ.get('BA_COMMUNITY_IOS') == '1'):
                     _baplus.secure_refresh(self._refresh)
             access = self._access if authenticated else None
         result = transport.request(method, path, body, access)
@@ -406,6 +458,9 @@ class CommunityOnlinePlus(CommunityPlusAppSubsystem):
         self.user = self.join_result = None
         self.accounts.primary = None
         config = babase.app.config
+        solo.select_progress(config, '')
+        self._solo_revision = 0
+        self._solo_sync_in_flight = False
         if config.get('Community Profile Owner'):
             config['Player Profiles'] = copy.deepcopy(config.get('Community Local Profiles', {}))
             config['Community Profile Owner'] = None
@@ -417,7 +472,7 @@ class CommunityOnlinePlus(CommunityPlusAppSubsystem):
         _babase.set_account_sign_in_state(False)
         # Clear durable credentials before returning, even if the app exits
         # before a queued network revocation can run. This performs no network I/O.
-        if os.environ.get('BA_COMMUNITY_ANDROID') == '1':
+        if (os.environ.get('BA_COMMUNITY_ANDROID') == '1' or os.environ.get('BA_COMMUNITY_IOS') == '1'):
             _baplus.secure_refresh(None)
         for call in self.accounts.on_primary_account_changed_callbacks.getcalls():
             call(None)
@@ -469,6 +524,10 @@ class CommunityOnlinePlus(CommunityPlusAppSubsystem):
             self._local_playlists.append((copy.deepcopy(transaction), callback))
             return
         super().add_v1_account_transaction(transaction, callback)
+        if transaction.get('type') in (
+            'ACHIEVEMENT', 'COMPLETE_LEVEL', 'SET_LEVEL_LOCAL_HIGH_SCORES'
+        ):
+            self._sync_solo_progress()
 
     def run_v1_account_transactions(self):
         playlists, self._local_playlists = self._local_playlists, []

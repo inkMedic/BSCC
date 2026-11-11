@@ -166,12 +166,12 @@ void GraphicsServer::set_client_context(GraphicsClientContext* context) {
   });
 }
 
-auto GraphicsServer::TryRender() -> bool {
+auto GraphicsServer::TryRender(bool wait_for_frame) -> bool {
   assert(g_base->app_adapter->InGraphicsContext());
 
   bool success{};
 
-  if (FrameDef* frame_def = WaitForRenderFrameDef_()) {
+  if (FrameDef* frame_def = WaitForRenderFrameDef_(wait_for_frame)) {
     // Apply any new graphics settings passed along via the frame-def.
     ApplySettings(frame_def->settings());
 
@@ -265,7 +265,7 @@ void GraphicsServer::UpdateRenderProfile_(double preprocess_ms,
   render_profile_window_start_ = now;
 }
 
-auto GraphicsServer::WaitForRenderFrameDef_() -> FrameDef* {
+auto GraphicsServer::WaitForRenderFrameDef_(bool wait_for_frame) -> FrameDef* {
   BA_PRECONDITION_LOG_ONCE(g_base->app_adapter->InGraphicsContext());
   millisecs_t start_time = g_core->AppTimeMillisecs();
 
@@ -294,6 +294,11 @@ auto GraphicsServer::WaitForRenderFrameDef_() -> FrameDef* {
       // and pipelined.
       g_base->logic->event_loop()->PushCall([] { g_base->logic->Draw(); });
       return frame_def;
+    }
+
+    // Display-driven clients can skip this tick instead of blocking UIKit.
+    if (!wait_for_frame) {
+      return nullptr;
     }
 
     // If there's no frame_def for us, sleep for a bit and wait for it.

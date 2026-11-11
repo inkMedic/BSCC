@@ -81,7 +81,7 @@ class GraphicsServer {
 
   // Attempts to wait for a frame-def to come in and render it.
   // Returns true if a frame was rendered.
-  auto TryRender() -> bool;
+  auto TryRender(bool wait_for_frame = true) -> bool;
 
   // Init the modelview matrix to look here.
   void SetCamera(const Vector3f& eye, const Vector3f& target,
@@ -327,7 +327,7 @@ class GraphicsServer {
   // necessary. this can return nullptr if no frame_defs come in within a
   // reasonable amount of time. a frame_def here *must* be rendered and
   // disposed of using the RenderFrameDef* calls.
-  auto WaitForRenderFrameDef_() -> FrameDef*;
+  auto WaitForRenderFrameDef_(bool wait_for_frame) -> FrameDef*;
   void UpdateRenderProfile_(double preprocess_ms, double render_ms);
 
   // Update virtual screen dimensions based on the current physical ones.

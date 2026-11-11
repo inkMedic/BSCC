@@ -1,3 +1,8 @@
 {
-    "python.analysis.extraPaths": ["src/assets/ba_data/python","build/dummymodules","tools"]
+    "python.analysis.extraPaths": [
+        "src/assets/ba_data/python",
+        "build/dummymodules",
+        "tools"
+    ],
+    "cmake.sourceDirectory": "/Users/medic/Codes/bscn/ballisticakit-cmake"
 }

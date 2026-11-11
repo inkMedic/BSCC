@@ -46,6 +46,11 @@
 #endif  // BA_OPENGL_IS_ES
 #endif  // BA_XCODE_BUILD
 
+#if BA_COMMUNITY_IOS
+#include <OpenGLES/ES3/gl.h>
+#include <OpenGLES/ES3/glext.h>
+#endif
+
 // On Android, we're currently supporting Android API 21 and newer, which
 // means we can count on GL ES 3.1 libs/headers always being available. Note
 // that hardware may still be limited to older versions so we need to check

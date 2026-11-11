@@ -53,6 +53,8 @@ def test_client_single_flight_and_logout_cancellation():
         modules[name] = types.ModuleType(name)
         modules[name].__dict__.update(attrs)
     path = Path(__file__).resolve().parents[2] / 'src/assets/ba_data/python/baplus/_community_online.py'
+    modules['baplus'] = types.ModuleType('baplus')
+    modules['baplus'].__path__ = [str(path.parent)]
     with patch.dict(sys.modules, modules), patch.dict('os.environ', {'BA_COMMUNITY_ANDROID': '0'}):
         spec = importlib.util.spec_from_file_location('community_online_fixture', path)
         module = importlib.util.module_from_spec(spec)

@@ -1,4 +1,4 @@
-from typing import Literal, Any
+from typing import Annotated, Literal, Any
 from uuid import UUID
 from pydantic import BaseModel, Field, field_validator, ConfigDict
 
@@ -39,6 +39,48 @@ class PlayerProfile(Strict):
         if any(not math.isfinite(v) or not 0 <= v <= 10 for v in value):
             raise ValueError('Invalid color')
         return value
+
+
+ProgressName = Annotated[str, Field(min_length=1, max_length=128)]
+ScoreVersion = Annotated[str, Field(max_length=128)]
+PlayerCount = Annotated[str, Field(pattern=r'^[1-9][0-9]? Player$')]
+
+
+class SoloScorePlayer(Strict):
+    name: str = Field(max_length=256)
+    character: str = Field(max_length=128)
+
+
+class SoloScoreDetails(Strict):
+    players: list[SoloScorePlayer] = Field(min_length=1, max_length=32)
+
+
+SoloScore = tuple[
+    Annotated[int, Field(strict=True, ge=-(2**63), lt=2**63)], SoloScoreDetails
+]
+SoloBoard = Annotated[list[SoloScore], Field(max_length=10)]
+SoloScoreVersion = Annotated[dict[PlayerCount, SoloBoard], Field(max_length=32)]
+
+
+class SoloLevel(Strict):
+    complete: bool = False
+    rating: float = Field(default=0.0, ge=0, allow_inf_nan=False)
+    lower_is_better: bool = False
+    scores: dict[ScoreVersion, SoloScoreVersion] = Field(
+        default_factory=dict, max_length=32
+    )
+
+
+class SoloProgress(Strict):
+    achievements: list[ProgressName] = Field(default_factory=list, max_length=512)
+    campaigns: dict[
+        ProgressName, Annotated[dict[ProgressName, SoloLevel], Field(max_length=256)]
+    ] = Field(default_factory=dict, max_length=64)
+
+
+class SoloProgressSync(Strict):
+    revision: int = Field(ge=0)
+    progress: SoloProgress
 
 
 class Compatibility(Strict):

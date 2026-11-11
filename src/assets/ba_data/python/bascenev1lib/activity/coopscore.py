@@ -647,8 +647,13 @@ class CoopScoreScreen(bs.Activity[bs.Player, bs.Team]):
             level.index < len(levels) - 1
         ) and self._campaign.sequential
 
-        # Any time we complete a level, set the next one as unlocked.
-        if self._is_complete and self._is_more_levels:
+        # Community campaigns record victories even on the last level or
+        # in non-sequential campaigns, where there is no next unlock.
+        save_local_victory = self._newly_complete and (
+            getattr(plus, 'community_online', False)
+            or getattr(plus, 'community_offline', False)
+        )
+        if save_local_victory or (self._is_complete and self._is_more_levels):
             plus.add_v1_account_transaction(
                 {
                     'type': 'COMPLETE_LEVEL',
@@ -656,6 +661,8 @@ class CoopScoreScreen(bs.Activity[bs.Player, bs.Team]):
                     'level': self._level_name,
                 }
             )
+
+        if self._is_complete and self._is_more_levels:
             self._next_level_name = levels[level.index + 1].name
 
             # If this is the first time we completed it, set the next one

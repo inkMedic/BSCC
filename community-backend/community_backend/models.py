@@ -20,6 +20,8 @@ class User(Base):
     password_hash: Mapped[str] = mapped_column(String(256))
     disabled: Mapped[bool] = mapped_column(Boolean, default=False)
     player_profiles: Mapped[dict] = mapped_column(JSON, default=dict)
+    solo_progress: Mapped[dict] = mapped_column(JSON, default=dict)
+    solo_progress_revision: Mapped[int] = mapped_column(Integer, default=0)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
 
 

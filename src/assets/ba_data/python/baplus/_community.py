@@ -233,8 +233,26 @@ class CommunityPlusAppSubsystem(PlusAppSubsystem):
                 raise unavailable()
             self._local_profile_transactions.append((copy.deepcopy(transaction), callback))
             return
-        # Legacy scripts submit achievements/statistics even while offline.
-        # Discard these rather than upload them; callbacks receive failure.
+        if kind in ('ACHIEVEMENT', 'COMPLETE_LEVEL', 'SET_LEVEL_LOCAL_HIGH_SCORES'):
+            classic = babase.app.classic
+            assert classic is not None
+            if kind == 'ACHIEVEMENT':
+                classic.ach.get_achievement(transaction['name']).set_complete()
+            else:
+                level = classic.getcampaign(transaction['campaign']).getlevel(
+                    transaction['level']
+                )
+                if kind == 'COMPLETE_LEVEL':
+                    level.set_complete(True)
+                else:
+                    if transaction['scoreVersion'] != level.get_score_version_string():
+                        raise ValueError('Local high scores have the wrong version')
+                    level.set_high_scores(copy.deepcopy(transaction['scores']))
+            babase.app.config.commit()
+            if callback is not None:
+                babase.pushcall(lambda: callback({}))
+            return
+        # Unsupported legacy service requests finish with a failure callback.
         if callback is not None:
             self._rejected_transactions.append(callback)
 

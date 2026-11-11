@@ -56,6 +56,7 @@ class AppConfig {
     kDevConsoleButtonStyle,
     kDevConsoleButtonAnchor,
     kMSAA,
+    kIOSFramePresentation,
     kLast  // Sentinel.
   };
 

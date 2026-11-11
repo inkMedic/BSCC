@@ -41,6 +41,11 @@
 #include "ballistica/shared/foundation/event_loop.h"
 #include "ballistica/shared/foundation/input_types.h"
 
+#if BA_COMMUNITY_IOS
+#include "frame_clock_ios.h"
+#include "metal_presenter_ios.h"
+#endif
+
 #if BA_PLATFORM_ANDROID
 extern "C" bool BallisticaCommunityHasAudioFocus();
 #endif
@@ -55,7 +60,7 @@ namespace ballistica::base {
 // path (Graphics::DrawCursor) on a desktop build - that path stays
 // load-bearing for platforms with no hardware cursor (e.g. Android
 // with a pointer).
-static const bool kUseHardwareCursor{true};
+static const bool kUseHardwareCursor{!BA_COMMUNITY_IOS};
 
 // The hardware cursor's logical size in points -- matches the Mac
 // build's cursor so all paths present identically. The cursor-texture
@@ -170,6 +175,8 @@ void AppAdapterSDL::OnMainThreadStartApp() {
   // We dispatch suspend/resume explicitly so the logic and audio threads
   // finish their suspend callbacks before Android stops the app.
   SDL_SetHint(SDL_HINT_ANDROID_BLOCK_ON_PAUSE, "0");
+#endif
+#if BA_PLATFORM_ANDROID || BA_COMMUNITY_IOS
   SDL_SetHint(SDL_HINT_TOUCH_MOUSE_EVENTS, "0");
   SDL_SetHint(SDL_HINT_MOUSE_TOUCH_EVENTS, "0");
 #endif
@@ -221,6 +228,10 @@ void AppAdapterSDL::OnMainThreadStartApp() {
   // (SetHardwareCursorVisible) once drawing is up.
   SDL_HideCursor();
 }
+
+// Match the UIKit adapter: iOS touch UI must not draw an engine cursor.
+// An attached iPad pointer is presented by UIKit itself.
+auto AppAdapterSDL::ShouldUseCursor() -> bool { return !BA_COMMUNITY_IOS; }
 
 auto AppAdapterSDL::HasHardwareCursor() -> bool { return kUseHardwareCursor; }
 
@@ -315,6 +326,10 @@ auto AppAdapterSDL::CreateHardwareCursor_() -> SDL_Cursor* {
 struct AppAdapterSDL::GraphicsSettings_ : public GraphicsSettings {
   bool fullscreen = g_base->app_config->Resolve(AppConfig::BoolID::kFullscreen);
   VSyncRequest vsync = g_base->graphics->VSyncFromAppConfig();
+#if BA_COMMUNITY_IOS
+  std::string ios_frame_presentation =
+      g_base->app_config->Resolve(AppConfig::StringID::kIOSFramePresentation);
+#endif
   int max_fps = g_base->app_config->Resolve(AppConfig::IntID::kMaxFPS);
 };
 
@@ -350,10 +365,10 @@ void AppAdapterSDL::ApplyGraphicsSettings(
 
   if (need_full_reload) {
     ReloadRenderer_(settings);
-  } else if ((BA_PLATFORM_ANDROID || settings->fullscreen) != fullscreen_) {
+  } else if ((BA_PLATFORM_ANDROID || BA_COMMUNITY_IOS || settings->fullscreen) != fullscreen_) {
     // SDL3 takes a bool; with no fullscreen display-mode set this gives the
     // borderless 'desktop' fullscreen we used to request explicitly.
-    fullscreen_ = BA_PLATFORM_ANDROID || settings->fullscreen;
+    fullscreen_ = BA_PLATFORM_ANDROID || BA_COMMUNITY_IOS || settings->fullscreen;
     SDL_SetWindowFullscreen(sdl_window_, fullscreen_);
   }
 
@@ -423,6 +438,16 @@ void AppAdapterSDL::ApplyGraphicsSettings(
   // the main thread.
   max_fps_ = settings->max_fps;
 
+#if BA_COMMUNITY_IOS
+  if (settings->ios_frame_presentation == "OpenGL") {
+    ios_frame_presentation_ = IOSFramePresentation::kOpenGL;
+  } else if (settings->ios_frame_presentation == "Metal") {
+    ios_frame_presentation_ = IOSFramePresentation::kMetal;
+  } else {
+    ios_frame_presentation_ = IOSFramePresentation::kAuto;
+  }
+#endif
+
   // Take -1 to mean no max. Otherwise clamp to a reasonable range.
   if (max_fps_ != -1) {
     max_fps_ = std::max(10, max_fps_);
@@ -434,6 +459,14 @@ void AppAdapterSDL::RunMainThreadEventLoopToCompletion() {
   assert(g_core->InMainThread());
 
   while (!done_) {
+    bool render_now = true;
+#if BA_COMMUNITY_IOS
+    const bool display_clock_active = sdl_window_ != nullptr;
+    if (display_clock_active) {
+      render_now = WaitForIOSDisplayTick(sdl_window_, max_fps_,
+                                         !WindowIsInvisible_());
+    }
+#endif
     auto cycle_start_time{g_core->AppTimeMicrosecs()};
 
     // Events.
@@ -447,15 +480,36 @@ void AppAdapterSDL::RunMainThreadEventLoopToCompletion() {
     // Draw.
     auto draw_start_time{g_core->AppTimeMicrosecs()};
     LogEventProcessingTime_(draw_start_time - cycle_start_time, event_count);
-    if (!WindowIsInvisible_() && TryRender()) {
-      SwapBuffers_();
+    if (render_now && !done_ && !WindowIsInvisible_()) {
+      const bool rendered = TryRender();
+#if BA_COMMUNITY_IOS
+      const auto present_start = g_core->AppTimeMicrosecs();
+#endif
+      if (rendered) {
+        SwapBuffers_();
+      }
+#if BA_COMMUNITY_IOS
+      if (display_clock_active) {
+        RecordIOSFrame(rendered, (present_start - draw_start_time) / 1000.0,
+                       (g_core->AppTimeMicrosecs() - present_start) / 1000.0);
+      }
+#endif
     }
 
+#if BA_COMMUNITY_IOS
+    if (display_clock_active) {
+      continue;
+    }
+#endif
     // Sleep.
     SleepUntilNextEventCycle_(cycle_start_time);
 
     // Repeat.
   }
+#if BA_COMMUNITY_IOS
+  StopIOSMetalPresenter();
+  StopIOSDisplayClock();
+#endif
 }
 
 void AppAdapterSDL::SwapBuffers_() {
@@ -476,6 +530,24 @@ void AppAdapterSDL::SwapBuffers_() {
     UpdateScreenSizes_();
   }
 #else
+#if BA_COMMUNITY_IOS
+  // Offscreen targets can leave a depth renderbuffer bound. UIKit's
+  // presentRenderbuffer requires the window's drawable color buffer.
+  const auto drawable = SDL_GetNumberProperty(
+      SDL_GetWindowProperties(sdl_window_),
+      SDL_PROP_WINDOW_UIKIT_OPENGL_RENDERBUFFER_NUMBER, 0);
+  if (drawable == 0) {
+    BA_LOG_ONCE(LogName::kBaGraphics, LogLevel::kError,
+                "Missing UIKit OpenGL drawable renderbuffer.");
+    return;
+  }
+  glBindRenderbuffer(GL_RENDERBUFFER, static_cast<GLuint>(drawable));
+  const bool use_metal =
+      ios_frame_presentation_ == IOSFramePresentation::kMetal
+      || (ios_frame_presentation_ == IOSFramePresentation::kAuto
+          && IOSDisplayWantsHighRefresh());
+  if (TryPresentIOSMetalFrame(sdl_window_, use_metal)) return;
+#endif
   SDL_GL_SwapWindow(sdl_window_);
 #endif
 }
@@ -516,10 +588,10 @@ auto AppAdapterSDL::TryRender() -> bool {
       delete call;
     }
     // Lastly render.
-    return g_base->graphics_server->TryRender();
+    return g_base->graphics_server->TryRender(!BA_COMMUNITY_IOS);
   } else {
     // Simpler path; just render.
-    return g_base->graphics_server->TryRender();
+    return g_base->graphics_server->TryRender(!BA_COMMUNITY_IOS);
   }
 }
 
@@ -691,14 +763,14 @@ static auto SDLJoystickEventToBA_(const SDL_Event& e) -> BAEvent {
   return out;
 }
 
-#if BA_PLATFORM_ANDROID
-void AppAdapterSDL::CancelAndroidTouches_() {
-  for (auto& [id, touch] : android_touches_) {
+#if BA_PLATFORM_ANDROID || BA_COMMUNITY_IOS
+void AppAdapterSDL::CancelMobileTouches_() {
+  for (auto& [id, touch] : mobile_touches_) {
     touch.type = TouchEvent::Type::kCanceled;
     touch.overall = false;
     g_base->input->PushTouchEvent(touch);
   }
-  android_touches_.clear();
+  mobile_touches_.clear();
   if (auto* loop = g_base->logic->event_loop()) {
     loop->PushCall([] { g_base->input->ResetHoldStates(); });
   }
@@ -708,10 +780,10 @@ void AppAdapterSDL::CancelAndroidTouches_() {
 void AppAdapterSDL::HandleSDLEvent_(const SDL_Event& event) {
   assert(g_core->InMainThread());
   assert(g_base);
-#if BA_PLATFORM_ANDROID
+#if BA_PLATFORM_ANDROID || BA_COMMUNITY_IOS
   switch (event.type) {
     case SDL_EVENT_QUIT:
-      CancelAndroidTouches_();
+      CancelMobileTouches_();
       // Activity destruction can arrive while logic is suspended. It
       // must be running to process the engine's orderly shutdown call.
       if (g_base->app_suspended()) g_base->UnsuspendApp();
@@ -720,7 +792,7 @@ void AppAdapterSDL::HandleSDLEvent_(const SDL_Event& event) {
       if (event.user.code == 0x42414643) {
         android_audio_focus_ = event.user.data1 != nullptr;
         if (!android_audio_focus_) {
-          CancelAndroidTouches_();
+          CancelMobileTouches_();
           UpdateAppActive_();
           if (!g_base->app_suspended()) g_base->SuspendApp();
         } else if (!hidden_ && !minimized_) {
@@ -746,24 +818,24 @@ void AppAdapterSDL::HandleSDLEvent_(const SDL_Event& event) {
           : event.type == SDL_EVENT_FINGER_UP ? TouchEvent::Type::kUp
           : TouchEvent::Type::kCanceled;
       if (touch.type == TouchEvent::Type::kDown) {
-        touch.overall = android_touches_.empty();
-        android_touches_[id] = touch;
-      } else if (!android_touches_.contains(id)) {
+        touch.overall = mobile_touches_.empty();
+        mobile_touches_[id] = touch;
+      } else if (!mobile_touches_.contains(id)) {
         return;  // A late event after focus loss/cancel.
       } else if (touch.type == TouchEvent::Type::kMoved) {
-        android_touches_[id] = touch;
+        mobile_touches_[id] = touch;
       } else {
-        android_touches_.erase(id);
-        touch.overall = android_touches_.empty();
+        mobile_touches_.erase(id);
+        touch.overall = mobile_touches_.empty();
       }
       g_base->input->PushTouchEvent(touch);
       return;
     }
     case SDL_EVENT_WINDOW_FOCUS_LOST:
-      CancelAndroidTouches_();
+      CancelMobileTouches_();
       break;
     case SDL_EVENT_WILL_ENTER_BACKGROUND:
-      CancelAndroidTouches_();
+      CancelMobileTouches_();
       hidden_ = true;
       UpdateAppActive_();
       if (!g_base->app_suspended()) g_base->SuspendApp();
@@ -1420,7 +1492,7 @@ void AppAdapterSDL::ReloadRenderer_(const GraphicsSettings_* settings) {
 
   // If we don't haven't yet, create our window and renderer.
   if (!sdl_window_) {
-    fullscreen_ = BA_PLATFORM_ANDROID || settings->fullscreen;
+    fullscreen_ = BA_PLATFORM_ANDROID || BA_COMMUNITY_IOS || settings->fullscreen;
 
     // A reasonable default window size.
     int width, height;
@@ -1663,9 +1735,10 @@ void AppAdapterSDL::CursorPositionForDraw(float* x, float* y) {
   *y = immediate_y;
 }
 
-auto AppAdapterSDL::FullscreenControlAvailable() const -> bool { return true; }
+auto AppAdapterSDL::FullscreenControlAvailable() const -> bool { return !BA_COMMUNITY_IOS; }
 auto AppAdapterSDL::FullscreenControlKeyShortcut() const
     -> std::optional<std::string> {
+  if (BA_COMMUNITY_IOS) return std::nullopt;
   // On our SDL build we support F11 and Alt+Enter to toggle fullscreen.
   // Let's mention Alt+Enter which seems like it might be more commonly used
   return "Alt+Enter";

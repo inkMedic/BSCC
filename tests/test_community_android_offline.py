@@ -4,7 +4,7 @@ from pathlib import Path
 import sys
 import types
 import unittest
-from unittest.mock import patch
+from unittest.mock import Mock, patch
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -107,6 +107,49 @@ class OfflinePolicyTest(unittest.TestCase):
         self.assertEqual(responses, [])
         self.drain()
         self.assertEqual(responses, [None])
+
+    def test_coop_progress_is_committed_without_cloud(self):
+        plus = self.module.CommunityPlusAppSubsystem()
+        achievement = Mock()
+        level = Mock()
+        level.get_score_version_string.return_value = ' 2'
+        classic = Mock()
+        classic.ach.get_achievement.return_value = achievement
+        classic.getcampaign.return_value.getlevel.return_value = level
+        sys.modules['babase'].app.classic = classic
+
+        scores = {'1 Player': [[42, {'players': [{'name': 'Player'}]}]]}
+        responses = []
+        with patch.object(self.config, 'commit') as commit:
+            plus.add_v1_account_transaction(
+                {'type': 'ACHIEVEMENT', 'name': 'Test Victory'}
+            )
+            plus.add_v1_account_transaction(
+                {'type': 'COMPLETE_LEVEL', 'campaign': 'Easy', 'level': 'Test Level'}
+            )
+            plus.add_v1_account_transaction(
+                {
+                    'type': 'SET_LEVEL_LOCAL_HIGH_SCORES',
+                    'campaign': 'Easy',
+                    'level': 'Test Level',
+                    'scoreVersion': ' 2',
+                    'scores': scores,
+                },
+                responses.append,
+            )
+            self.assertEqual(commit.call_count, 3)
+
+        classic.ach.get_achievement.assert_called_once_with('Test Victory')
+        achievement.set_complete.assert_called_once_with()
+        classic.getcampaign.assert_called_with('Easy')
+        classic.getcampaign.return_value.getlevel.assert_called_with('Test Level')
+        level.set_complete.assert_called_once_with(True)
+        level.set_high_scores.assert_called_once_with(scores)
+        scores['1 Player'].clear()
+        self.assertEqual(level.set_high_scores.call_args.args[0]['1 Player'][0][0], 42)
+        self.assertEqual(responses, [])
+        self.drain()
+        self.assertEqual(responses, [{}])
 
     def test_unsupported_login_and_purchase_fail_explicitly(self):
         plus = self.module.CommunityPlusAppSubsystem()

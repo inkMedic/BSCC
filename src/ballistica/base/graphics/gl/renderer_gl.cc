@@ -179,7 +179,7 @@ static auto CheckGLExtension(const std::vector<std::string>& exts,
 // category is added to LogName in the future.
 constexpr LogName kGLDebugLogName = LogName::kBaGraphics;
 
-#if BA_OPENGL_IS_ES && (BA_SDL_BUILD || BA_PLATFORM_ANDROID)
+#if BA_OPENGL_IS_ES && (BA_SDL_BUILD || BA_PLATFORM_ANDROID) && !BA_COMMUNITY_IOS
 // Not compiled on Apple ES builds (iOS/tvOS) — GL_DEBUG_*_KHR constants absent.
 static void GL_APIENTRY GLDebugCallbackKHR_(GLenum source, GLenum type,
                                             GLuint id, GLenum severity,
@@ -203,7 +203,7 @@ static void GL_APIENTRY GLDebugCallbackKHR_(GLenum source, GLenum type,
   }
   g_core->logging->Log(kGLDebugLogName, level, std::string(prefix) + message);
 }
-#elif BA_SDL_BUILD
+#elif !BA_OPENGL_IS_ES && BA_SDL_BUILD
 // Not compiled on non-SDL desktop GL builds (e.g. macOS Xcode) since Apple's
 // OpenGL headers cap at 4.1 and don't define GL_DEBUG_* constants.
 static void GLAPIENTRY GLDebugCallback_(GLenum source, GLenum type, GLuint id,
@@ -3735,7 +3735,7 @@ void RendererGL::TrySetupGLDebugOutput_() {
   // eglGetProcAddress covers Android (MINSDL_BUILD, no full SDL).
   // Apple ES (iOS/tvOS) and Apple desktop (macOS Xcode) lack proc-address APIs
   // and GL_KHR_debug header support, so they are skipped entirely.
-#if BA_OPENGL_IS_ES && BA_SDL_BUILD
+#if BA_OPENGL_IS_ES && BA_SDL_BUILD && !BA_COMMUNITY_IOS
   if (!gl_supports_khr_debug_) {
     g_core->logging->Log(kGLDebugLogName, LogLevel::kInfo,
                          "GL debug output not available (no GL_KHR_debug).");
@@ -3800,7 +3800,7 @@ void RendererGL::ApplyGLDebugSettings_() {
   // At warning level or higher: disable GL debug output entirely to avoid
   // any driver-side overhead.
   if (!info_level && !debug_level) {
-#if BA_OPENGL_IS_ES && (BA_SDL_BUILD || BA_PLATFORM_ANDROID)
+#if BA_OPENGL_IS_ES && (BA_SDL_BUILD || BA_PLATFORM_ANDROID) && !BA_COMMUNITY_IOS
     glDisable(GL_DEBUG_OUTPUT_KHR);
 #elif !BA_OPENGL_IS_ES && BA_SDL_BUILD
     glDisable(GL_DEBUG_OUTPUT);
@@ -3808,7 +3808,7 @@ void RendererGL::ApplyGLDebugSettings_() {
     return;
   }
 
-#if BA_OPENGL_IS_ES && (BA_SDL_BUILD || BA_PLATFORM_ANDROID)
+#if BA_OPENGL_IS_ES && (BA_SDL_BUILD || BA_PLATFORM_ANDROID) && !BA_COMMUNITY_IOS
   glEnable(GL_DEBUG_OUTPUT_KHR);
   auto& ctrl = gl_debug_message_control_khr_;
   if (debug_level) {
@@ -3827,7 +3827,7 @@ void RendererGL::ApplyGLDebugSettings_() {
     ctrl(GL_DONT_CARE, GL_DONT_CARE, GL_DEBUG_SEVERITY_NOTIFICATION_KHR, 0,
          nullptr, GL_TRUE);
   }
-#elif BA_SDL_BUILD
+#elif !BA_OPENGL_IS_ES && BA_SDL_BUILD
   glEnable(GL_DEBUG_OUTPUT);
   auto& ctrl = gl_debug_message_control_;
   if (debug_level) {

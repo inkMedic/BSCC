@@ -54,6 +54,7 @@ class AppAdapterSDL : public AppAdapter {
   void OnUITextEditingBegin(const Rect& rect_normalized) override;
   void OnUITextEditingUpdate(const Rect& rect_normalized) override;
   void OnUITextEditingEnd() override;
+  auto ShouldUseCursor() -> bool override;
   auto HasHardwareCursor() -> bool override;
   void SetHardwareCursorVisible(bool visible) override;
   void ApplyGraphicsSettings(const GraphicsSettings* settings) override;
@@ -79,9 +80,9 @@ class AppAdapterSDL : public AppAdapter {
   auto DoClipboardGetText() -> std::string override;
 
  private:
-#if BA_PLATFORM_ANDROID
-  void CancelAndroidTouches_();
-  std::map<uint64_t, TouchEvent> android_touches_;
+#if BA_PLATFORM_ANDROID || BA_COMMUNITY_IOS
+  void CancelMobileTouches_();
+  std::map<uint64_t, TouchEvent> mobile_touches_;
   bool android_audio_focus_{true};
 #endif
   class ScopedAllowGraphics_;
@@ -118,12 +119,16 @@ class AppAdapterSDL : public AppAdapter {
   /// Whether nothing we draw can be seen (so we skip drawing). Never true
   /// for offscreen GL runs, whose frames don't go to the window at all.
   auto WindowIsInvisible_() const -> bool {
-#if BA_PLATFORM_ANDROID
+#if BA_PLATFORM_ANDROID || BA_COMMUNITY_IOS
     if (!android_audio_focus_) return true;
 #endif
     return !offscreen_gl_ && (hidden_ || minimized_);
   }
 
+#if BA_COMMUNITY_IOS
+  enum class IOSFramePresentation { kAuto, kOpenGL, kMetal };
+  IOSFramePresentation ios_frame_presentation_{IOSFramePresentation::kAuto};
+#endif
   int max_fps_{60};
   bool done_{};
   bool fullscreen_{};

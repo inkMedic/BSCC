@@ -74,6 +74,10 @@
 
 // Apple -----------------------------------------------------------------------
 
+#elif BA_COMMUNITY_IOS
+#include "platform_ios.h"
+#define BA_PLATFORM_CLASS PlatformCommunityIOS
+
 #elif BA_PLATFORM_MACOS || BA_PLATFORM_IOS_TVOS
 #include "ballistica/core/platform/apple/platform_apple.h"
 #define BA_PLATFORM_CLASS PlatformApple

@@ -8,6 +8,9 @@
 #include <SDL3/SDL.h>
 extern "C" jclass BallisticaCommunityActivity();
 #endif
+#if BA_COMMUNITY_IOS
+extern "C" PyObject* BallisticaCommunityIOSRefresh(bool write, const char* value);
+#endif
 #include "ballistica/base/base.h"
 #include "ballistica/base/support/plus_soft.h"
 #include "ballistica/base/support/classic_soft.h"
@@ -78,8 +81,10 @@ auto SecureRefresh(PyObject*, PyObject* args) -> PyObject* {
   env->ReleaseStringUTFChars(result, text);
   env->DeleteLocalRef(result);
   return out;
+#elif BA_COMMUNITY_IOS
+  return BallisticaCommunityIOSRefresh(PyTuple_Size(args) != 0, value);
 #else
-  PyErr_SetString(PyExc_RuntimeError, "Secure refresh persistence requires Android Keystore");
+  PyErr_SetString(PyExc_RuntimeError, "Secure refresh persistence requires Android Keystore or iOS Keychain");
   return nullptr;
 #endif
 }

@@ -62,7 +62,7 @@ class Transport:
         if parsed.username or parsed.password or parsed.query or parsed.fragment:
             raise CommunityError('API 地址不能包含凭据、查询或片段。')
         cafile = os.environ.get('COMMUNITY_CA_FILE')
-        if not cafile and os.environ.get('BA_COMMUNITY_ANDROID') == '1':
+        if not cafile and (os.environ.get('BA_COMMUNITY_ANDROID') == '1' or os.environ.get('BA_COMMUNITY_IOS') == '1'):
             import certifi
             cafile = certifi.where()
         self.ssl = ssl.create_default_context(cafile=cafile)

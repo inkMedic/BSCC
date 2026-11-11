@@ -14,6 +14,7 @@ are logic-thread-only while pages are built in the background, so the
 controller keeps what the page build needs cached.
 """
 
+import os
 from enum import Enum
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Annotated, override, assert_never
@@ -27,6 +28,7 @@ from bacommon.docui.routes import (
     family_members,
 )
 from bacommon.langstr import LangStrSpecValue
+from bacommon.locale import Locale
 import bauiv1 as bui
 from bauiv1 import _commonassets, _classicassets
 from bauiv1lib.docui import TypedDocUIController
@@ -72,6 +74,14 @@ class VSync(Enum):
     AUTO = 'Auto'
     ALWAYS = 'Always'
     NEVER = 'Never'
+
+
+class IOSPresentation(Enum):
+    """How the iOS build submits the rendered game frame to the screen."""
+
+    AUTO = 'Auto'
+    OPENGL = 'OpenGL'
+    METAL = 'Metal'
 
 
 class ScreenInsets(Enum):
@@ -151,6 +161,9 @@ class GraphicsState(DocUIState, state_id='settings.graphics'):
     #: _scale_range()).
     resolution_scale: Annotated[float, IOAttrs('rs')] = 1.0
     vsync: Annotated[VSync, IOAttrs('vs')] = VSync.AUTO
+    ios_presentation: Annotated[IOSPresentation, IOAttrs('ip')] = (
+        IOSPresentation.AUTO
+    )
 
     #: One of the MSAA popup's choice values (see _msaa_choices()):
     #: 'Auto', 'Off', or a sample count such as '4'.
@@ -175,6 +188,7 @@ class GraphicsState(DocUIState, state_id='settings.graphics'):
 _CONFIG_KEYS: dict[str, str] = {
     GraphicsState.key(lambda s: s.visuals): 'Graphics Quality',
     GraphicsState.key(lambda s: s.vsync): 'Vertical Sync',
+    GraphicsState.key(lambda s: s.ios_presentation): 'iOS Frame Presentation',
     GraphicsState.key(lambda s: s.msaa): 'MSAA',
     GraphicsState.key(lambda s: s.show_fps): 'Show FPS',
     GraphicsState.key(lambda s: s.thermal_throttling): 'Thermal Throttling',
@@ -378,12 +392,20 @@ class GraphicsSettingsController(
                 str(config.resolve('MSAA')), self._msaa_sample_counts
             )
 
+        ios_presentation_available = os.environ.get('BA_COMMUNITY_IOS') == '1'
         state = GraphicsState(
             fullscreen=self._fullscreen,
             visuals=visuals,
             resolution=resolution,
             resolution_scale=resolution_scale,
             vsync=_enum_from_config(VSync, 'Vertical Sync', VSync.AUTO),
+            ios_presentation=(
+                _enum_from_config(
+                    IOSPresentation, 'iOS Frame Presentation', IOSPresentation.AUTO
+                )
+                if ios_presentation_available
+                else IOSPresentation.AUTO
+            ),
             msaa=msaa,
             max_fps=str(config.resolve('Max FPS')),
             show_fps=bool(config.resolve('Show FPS')),
@@ -470,6 +492,20 @@ class GraphicsSettingsController(
                     lambda s: s.vsync,
                     choice_label=_vsync_label,
                     label=_gfxstrs.vertical_sync.spec,
+                    on_change=apply,
+                )
+            )
+        if ios_presentation_available:
+            locale = bui.app.locale.current_locale.resolved.locale
+            label = {
+                Locale.CHINESE_SIMPLIFIED: '画面提交方式',
+                Locale.CHINESE_TRADITIONAL: '畫面提交方式',
+            }.get(locale, 'Frame Presentation')
+            rows.append(
+                gstate.choice_row(
+                    lambda s: s.ios_presentation,
+                    choice_label=_ios_presentation_label,
+                    label=LangStrSpecValue.literal(label),
                     on_change=apply,
                 )
             )
@@ -582,6 +618,12 @@ def _vsync_label(vsync: VSync) -> LangStrSpec:
             return valstrs.never.spec
         case _:
             assert_never(vsync)
+
+
+def _ios_presentation_label(presentation: IOSPresentation) -> LangStrSpec:
+    if presentation is IOSPresentation.AUTO:
+        return _commonassets.strings.values.auto.spec
+    return LangStrSpecValue.literal(presentation.value)
 
 
 def _screen_insets_label(insets: ScreenInsets) -> LangStrSpec:

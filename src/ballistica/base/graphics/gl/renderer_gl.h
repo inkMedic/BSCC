@@ -396,7 +396,7 @@ class RendererGL : public Renderer {
   // return non-null for unsupported functions), and using the KHR
   // debug enums without the extension yields GL_INVALID_ENUM.
   bool gl_supports_khr_debug_{};
-#if BA_OPENGL_IS_ES && (BA_SDL_BUILD || BA_PLATFORM_ANDROID)
+#if BA_OPENGL_IS_ES && (BA_SDL_BUILD || BA_PLATFORM_ANDROID) && !BA_COMMUNITY_IOS
   // Not available on Apple ES builds (iOS/tvOS) — gl2ext.h KHR typedefs absent.
   PFNGLDEBUGMESSAGECONTROLKHRPROC gl_debug_message_control_khr_{};
 #elif !BA_OPENGL_IS_ES && BA_SDL_BUILD

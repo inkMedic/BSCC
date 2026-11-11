@@ -800,6 +800,7 @@ class Chooser:
         assert classic is not None
         # (A session that fixes its profiles overrides everyone's own,
         # in the same form.)
+        plus = babase.app.plus
         cloud_json: list[str] | None = self.lobby.fixed_profiles
         if cloud_json is not None:
             pass
@@ -807,9 +808,10 @@ class Chooser:
             # (Empty means legacy profiles not migrated yet; a migrated
             # account always has __account__. Same below.)
             cloud_json = input_device.get_cloud_characters() or None
-        elif not is_test_input:
+        elif not is_test_input and not getattr(plus, 'community_online', False):
+            # Community account profiles are already merged into the
+            # config table by the community Plus subsystem.
             cloud_json = classic.cloud_profiles.get_usable_profiles() or None
-            plus = babase.app.plus
             if (
                 cloud_json is None
                 and plus is not None

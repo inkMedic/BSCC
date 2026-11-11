@@ -66,6 +66,11 @@ namespace ballistica {
 #define BA_PLATFORM_MACOS 0
 #endif
 
+// Community SDL/UIKit host, independent of the private Swift app.
+#ifndef BA_COMMUNITY_IOS
+#define BA_COMMUNITY_IOS 0
+#endif
+
 // Are we building for iOS? (also covers iPadOS)
 #ifndef BA_PLATFORM_IOS
 #define BA_PLATFORM_IOS 0

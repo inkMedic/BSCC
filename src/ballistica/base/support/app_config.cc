@@ -218,6 +218,8 @@ void AppConfig::SetupEntries_() {
       StringEntry("Vertical Sync", "Auto");
   // 'Auto', 'Off', or a sample count such as '4'. See
   // Graphics::MSAAFromAppConfig().
+  string_entries_[StringID::kIOSFramePresentation] =
+      StringEntry("iOS Frame Presentation", "Auto");
   string_entries_[StringID::kMSAA] = StringEntry("MSAA", "Auto");
   string_entries_[StringID::kVRHeadRelativeAudio] =
       StringEntry("VR Head Relative Audio", "Auto");
@@ -247,7 +249,7 @@ void AppConfig::SetupEntries_() {
       StringEntry("Dev Console Button Anchor", "");
 
   int_entries_[IntID::kPort] = IntEntry("Port", kDefaultPort);
-  int_entries_[IntID::kMaxFPS] = IntEntry("Max FPS", 60);
+  int_entries_[IntID::kMaxFPS] = IntEntry("Max FPS", BA_COMMUNITY_IOS ? 120 : 60);
 
   // Note: this gets clamped to the valid host range at use time, so
   // stored values from old configs simply snap forward when mins rise.
