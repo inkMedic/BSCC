@@ -1,4 +1,7 @@
-# Community backend
+# BombSquad-Chinese-Community backend
+
+这是 BSCC 自有的社区后端，不属于上游 Ballistica 的官方服务端。它与本仓库的客户端、
+账号体系、服务器目录和进度同步接口配套演进。
 
 FastAPI + PostgreSQL + Redis account, server directory and join preparation service.
 

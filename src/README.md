@@ -1,6 +1,9 @@
-# Ballistica Source
+# BombSquad-Chinese-Community source
 
-(Mostly) everything contributing to Ballistica builds lives here.
+这里是 BSCC 的引擎和资源源代码。目录结构沿用 Ballistica 上游项目，社区分支的原生 Plus、
+移动端宿主和中文社区功能以本仓库实现为准。
+
+这里包含（大部分）参与 BSCC 构建的引擎、原生模块和资源代码。
 
 ### Noteworthy Bits:
 

@@ -1,10 +1,13 @@
 <!--
 
-Thank you for submitting a PR to Ballistica!
+Thank you for contributing to BombSquad-Chinese-Community!
+
+This repository is a community branch of Ballistica with an independent product direction.
+Please describe any upstream synchronization impact when your change touches shared engine code.
 
 To ease the process of reviewing your PR, make sure to complete the following steps.
 
-You can also read more about contributing to Ballistica in this document:
+共享引擎代码的通用贡献背景仍可参考上游文档：
 https://ballistica.net/wiki/Contributing
 -->
 

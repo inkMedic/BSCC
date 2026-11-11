@@ -1,4 +1,7 @@
-# Ballistica Project Configuration
+# BombSquad-Chinese-Community project configuration
+
+这里保存 BSCC 的项目配置。部分配置字段沿用 Ballistica 上游名称，以便复用构建工具；实际
+的版本、社区平台和发行配置以本仓库为准。
 
 This directory contains overall configuration files for the project.
 

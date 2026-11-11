@@ -1,111 +1,55 @@
-社区 iOS 构建入口与真机验收说明见 [docs/ios-community-build.md](docs/ios-community-build.md)。
+# BombSquad-Chinese-Community
 
-<img
-src="https://files.ballistica.net/ballistica_media/ballistica_logo_half.png"
-height="50" alt="logo">
+BombSquad-Chinese-Community（简称 **BSCC**）是
+[Ballistica](https://github.com/efroemling/ballistica) 的社区分支版本，面向中文社区的
+客户端、服务器和配套服务开发。它会持续吸收上游的引擎更新，但产品功能、账号体系、
+服务端和发行方向由本项目独立维护。
 
-***bal·lis·tic***: physics of an object in motion; behaving like a projectile.
+本仓库不是 `efroemling/ballistica` 的镜像，也不是官方 BombSquad 发行仓库。上游代码、
+第三方依赖和资源仍按各自的许可证与授权要求使用；BSCC 新增的社区代码和服务配置以本仓库
+的提交记录为准。
 
-***-ica***: collection of things relating to a specific theme.
+## 项目内容
 
-[![](../../actions/workflows/ci.yml/badge.svg)](../../actions/workflows/ci.yml) [![](../../actions/workflows/cd.yml/badge.svg)](../../actions/workflows/cd.yml) [![](../../actions/workflows/nightly.yml/badge.svg)](../../actions/workflows/nightly.yml) [![Deploy Documentation](../../actions/workflows/deploy_docs.yml/badge.svg)](../../actions/workflows/deploy_docs.yml) [![status-badge](https://ci.codeberg.org/api/badges/14102/status.svg)](https://ci.codeberg.org/repos/14102)
+- 中文社区客户端和本地离线 Plus 实现
+- 独立的账号、服务器目录、联机准备和单人进度后端
+- Android 社区 APK、iOS 社区构建入口和 Linux Headless 服务端
+- 中文界面、社区活动、排行榜及移动端适配
 
-The Ballistica project is the foundation for
-[BombSquad](https://www.froemling.net/apps/bombsquad) and potentially other
-future projects.
+主要入口：
 
-[Head to the project wiki to get started
-](https://github.com/efroemling/ballistica/wiki), or learn more about the
-project below.
+| 内容 | 位置 |
+| --- | --- |
+| 社区后端 | [`community-backend/`](community-backend/) |
+| 社区客户端逻辑 | [`src/assets/ba_data/python/baplus/`](src/assets/ba_data/python/baplus/) |
+| 社区原生 Plus | [`src/ballistica/plus/community_plus.cc`](src/ballistica/plus/community_plus.cc) |
+| Android 工程 | [`ballisticakit-android/`](ballisticakit-android/) |
+| iOS 工程与构建脚本 | [`ballisticakit-ios/`](ballisticakit-ios/)、[`tools/community-ios/`](tools/community-ios/) |
+| 社区文档 | [`docs/community/`](docs/community/) |
 
-### Project Goals
+## 构建与发行
 
-* **Do one thing and do it well**
+移动端构建说明：
 
-  Ballistica is not aiming to be a general purpose game engine. Rather, its goal
-is to support creating one particular type of experience: 'physics based
-multiplayer action on small diorama-like environments built from real-world
-objects'. If you've got something you'd like to create that can fit within that
-box (as BombSquad itself does), give Ballistica a look. Of course, there is
-nothing preventing you from going and building a first person shooter out of
-this stuff, but I wouldn't recommend it.
+- [Android 社区构建](docs/android-community-build.md)
+- [iOS 社区构建与真机验收](docs/ios-community-build.md)
 
-* **Python tomfoolery**
+推送 `v*` 标签会触发 GitHub Actions，构建并发布桌面、服务器、Android 和 iOS 社区产物。
+iOS 云端产物默认未签名，Android 云端产物为 ARM64 Debug APK；签名和真机验收仍需使用对应
+平台的账号、证书和设备。
 
-   Ballistica is built on a C++ core for performance-sensitive code with a
-Python layer for high level game/app logic. This Python layer is designed to be
-mucked with. Users can override core game functionality, write their own mini
-games, or anything else they can dream up, either by directly accessing files on
-disk or by working through an integrated web-based editor. It can be a fun way
-to learn Python without the danger of getting actual work done.
+## 与上游同步
 
-* **Physics-y goodness**
+上游项目地址：<https://github.com/efroemling/ballistica>
 
-   I love playing with physics simulations, and Ballistica was built partly to
-scratch this itch. Though the game physics in BombSquad have stayed largely
-unchanged for a while, my future plans for the engine lean heavily on making
-this more flexible and open-ended, opening up lots of fun multiplayer physics-y
-potential. Stay tuned...
+同步上游时应先评估协议、资源、Plus 接口和社区后端的兼容性。BSCC 的功能变更不要求与上游
+保持相同的产品路线；涉及社区账号、联机协议或移动端宿主的修改，应同时更新
+[`docs/community/`](docs/community/) 中的设计和验收记录。
 
-* **Community**
+## 许可与贡献
 
-   BombSquad started as a 'just for fun' project to play with my friends, and I
-want to keep that spirit alive as the Ballistica project moves forward. Whether
-this means making it easier to share mods, organize tournaments, join up with
-friends, teach each other some Python, or whatever else. Life is short; let's
-play some games. Or make them. Maybe both.
+仓库内代码的许可信息见 [`LICENSE`](LICENSE) 及各目录中的说明。请不要重新分发未获授权的
+官方资源、预构建库或完整商业发行包。
 
-### Frequently Asked Questions
-
-* **Q: What's with this name? Is it BombSquad or Ballistica?**
-  * A: BombSquad is the game. Ballistica is the engine.
-
-* **Q: Does this mean BombSquad is open source?**
-  * A: Yes and no. All code contained in this repo is MIT licensed and free for
-  use anywhere. This includes game scripts, pipeline tools, and most of the
-  binary engine sources. Anything not directly contained in this repository,
-  however, even if automatically downloaded by build scripts, is still
-  proprietary and cannot be redistributed without explicit consent. This
-  includes assets and prebuilt libraries/binaries. So in a nutshell: create and
-  share mods or use any of this code in your own projects, but please don't
-  distribute your own complete copies of BombSquad without permission. Please
-  email support@froemling.net if you have any questions about this.
-
-* **Q: When are you adding more maps/characters/minigames/etc.  to
-  BombSquad!?!?**
-  * A: Check out the [Ballistica
-  Roadmap](https://github.com/efroemling/ballistica/wiki/Roadmap) to get a sense
-  of what's planned for when. And for the record, the answer to that particular
-  question is basically '1.8'.
-
-* **Q: When will BombSquad be released on iOS / Steam / Switch / Xbox /
-PlayStation / My toaster??**
-  * A: The 2.0 update will be the big 'relaunch' release and the plan is to
-  launch on at least iOS and Steam at that time. I'm trying to get there as fast
-  as I can. As far as consoles, I'd love to and hope to at some point but have
-  nothing to announce just yet.
-  * Check out [Ballistica Roadmap](https://github.com/efroemling/ballistica/wiki/Roadmap)
-  for more details or the [Ballistica
-  Downloads](https://ballistica.net/downloads) page for early test builds on
-  some platforms.
-
-### Cloning And Contributing
-
-You can contribute to this repository by reporting issues or creating pull
-requests in GitHub.
-This repository can be cloned from the following sources:
-
-* **GitHub**
-  * Link: https://github.com/efroemling/ballistica
-  * Cloning via [git](https://git-scm.com):
-  `git clone https://github.com/efroemling/ballistica.git`
-
-* **GitLab**:
-  * Link: https://gitlab.com/efroemling/ballistica
-  * Cloning via [git](https://git-scm.com):
-  `git clone https://gitlab.com/efroemling/ballistica.git`
-
-* **Codeberg**:
-  * Link: https://codeberg.org/efroemling/ballistica
-  * Cloning via [git](https://git-scm.com):
-  `git clone https://codeberg.org/efroemling/ballistica.git`
+欢迎通过本仓库的 Issue 和 Pull Request 提交中文社区相关的问题与改进。提交前请确认改动
+针对 BSCC 的功能方向，并在描述中注明是否需要同步上游。
