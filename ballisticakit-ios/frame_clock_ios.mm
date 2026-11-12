@@ -8,12 +8,15 @@
 #include <algorithm>
 #include <cmath>
 
+#include "ballistica/core/core.h"
+
 @interface CommunityDisplayClock : NSObject
 @property(nonatomic, strong) CADisplayLink* link;
 @property(nonatomic) BOOL tickReady;
 @property(nonatomic) BOOL waiting;
 @property(nonatomic) float renderCap;
 @property(nonatomic) CFTimeInterval nextFrame;
+@property(nonatomic) CFTimeInterval tickTimestamp;
 @property(nonatomic) CFTimeInterval sampleStart;
 @property(nonatomic) NSInteger sampleFrames;
 @property(nonatomic) NSInteger renderedFrames;
@@ -33,6 +36,7 @@
       self.nextFrame = link.timestamp;
     }
     self.nextFrame += step;
+    self.tickTimestamp = link.timestamp;
     self.tickReady = YES;
     if (self.waiting) {
       CFRunLoopStop(CFRunLoopGetCurrent());
@@ -130,6 +134,14 @@ auto WaitForIOSDisplayTick(SDL_Window* window, int max_fps, bool visible) -> boo
 
 auto IOSDisplayWantsHighRefresh() -> bool {
   return clock.renderCap > 60.0f;
+}
+
+auto IOSDisplayTimeSeconds() -> double {
+  const double now = core::g_core->AppTimeSeconds();
+  if (clock == nil || clock.tickTimestamp == 0) return now;
+  // CADisplayLink timestamps and CACurrentMediaTime share a clock. Convert
+  // their difference instead of assuming app-time has the same epoch.
+  return now - (CACurrentMediaTime() - clock.tickTimestamp);
 }
 
 void RecordIOSFrame(bool rendered, double draw_ms, double present_ms) {

@@ -217,6 +217,7 @@ void Logic::OnAppSuspend() {
 void Logic::OnAppUnsuspend() {
   assert(g_base->InLogicThread());
   assert(g_base->CurrentContext().IsEmpty());
+  display_time_clock_.Reset();
 
   // Note: keep these in the same order as OnAppStart.
   g_base->app_adapter->OnAppUnsuspend();
@@ -383,7 +384,7 @@ void Logic::OnScreenSizeChange(float virtual_width, float virtual_height,
 }
 
 // Bring all logic-thread stuff up to date for a new visual frame.
-void Logic::StepDisplayTime_() {
+void Logic::StepDisplayTime_(seconds_t frame_time) {
   assert(g_base->InLogicThread());
 
   // We have two different modes of operation here. When running in headless
@@ -395,7 +396,7 @@ void Logic::StepDisplayTime_() {
   if (g_core->HeadlessMode()) {
     UpdateDisplayTimeForHeadlessMode_();
   } else {
-    UpdateDisplayTimeForFrameDraw_();
+    UpdateDisplayTimeForFrameDraw_(frame_time);
   }
 
   // Keep the crash-context record current. Cross-platform and cheap
@@ -506,7 +507,16 @@ void Logic::PostUpdateDisplayTimeForHeadlessMode_() {
   headless_display_time_step_timer_->SetLength(sleep_microsecs);
 }
 
-void Logic::UpdateDisplayTimeForFrameDraw_() {
+void Logic::UpdateDisplayTimeForFrameDraw_(seconds_t frame_time) {
+#if BA_COMMUNITY_IOS
+  // The display link already supplies a stable clock. Measuring the time at
+  // which the logic thread happens to service Draw instead includes Python,
+  // loading and scheduler delays. Smoothing those delays changes game speed
+  // even when Metal keeps presenting at a steady rate.
+  display_time_increment_ = display_time_clock_.Step(
+      frame_time >= 0.0 ? frame_time : g_core->AppTimeSeconds());
+#else
+  (void)frame_time;
   // Here we update our smoothed display-time-increment based on how fast we
   // are currently rendering frames. We want display-time to basically be
   // progressing at the same rate as app-time but in as constant of a manner
@@ -631,6 +641,8 @@ void Logic::UpdateDisplayTimeForFrameDraw_() {
         });
   }
 
+#endif  // BA_COMMUNITY_IOS
+
   // Lastly, apply our updated increment value to our time.
   display_time_ += display_time_increment_;
 
@@ -683,7 +695,7 @@ void Logic::HandleTerminateSignal() {
   Shutdown();
 }
 
-void Logic::Draw() {
+void Logic::Draw(seconds_t frame_time) {
   assert(g_base->InLogicThread());
   assert(!g_core->HeadlessMode());
 
@@ -699,7 +711,7 @@ void Logic::Draw() {
   // drawn. But as high frame rates are becoming more normal this becomes
   // less and less meaningful and its probably best to prioritize smooth
   // visuals.
-  StepDisplayTime_();
+  StepDisplayTime_(frame_time);
 }
 
 void Logic::NotifyOfPendingAssetLoads() {

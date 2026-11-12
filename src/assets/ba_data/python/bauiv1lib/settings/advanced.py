@@ -107,6 +107,7 @@ class AdvancedState(DocUIState, state_id='settings.advanced'):
     always_use_internal_keyboard: Annotated[bool, IOAttrs('kb')] = False
     allow_extreme_aspect_ratios: Annotated[bool, IOAttrs('ar')] = False
     legacy_character_physics: Annotated[bool, IOAttrs('lcp')] = False
+    classic_combat: Annotated[bool, IOAttrs('cc')] = False
 
 
 #: Config key for each state field that is a plain config mirror. Built
@@ -129,6 +130,7 @@ _CONFIG_KEYS: dict[str, str] = {
     AdvancedState.key(
         lambda s: s.legacy_character_physics
     ): 'Legacy Character Physics',
+    AdvancedState.key(lambda s: s.classic_combat): 'Classic Combat',
 }
 
 
@@ -352,12 +354,37 @@ def _page() -> dui2.Response:
         legacy_character_physics=bool(
             config.get('Legacy Character Physics', False)
         ),
+        classic_combat=bool(config.get('Classic Combat', False)),
     )
     # A stored language we can no longer show reads as Auto.
     if state.language not in {c[0] for c in _language_choices()}:
         state.language = _LANGUAGE_AUTO
 
     apply = ApplySetting().local(default_sound=False)
+
+    locale = app.locale.current_locale.resolved.locale
+    classic_combat_label, classic_combat_description = {
+        Locale.CHINESE_SIMPLIFIED: (
+            '经典技巧（炸弹飞／抓打）',
+            '启用旧版角色物理，解除抓取前后的拳击保护。'
+            '从下一局生效，仅在自己主持的游戏中有效。'
+            '主持联机游戏时会增加网络流量。',
+        ),
+        Locale.CHINESE_TRADITIONAL: (
+            '經典技巧（炸彈飛／抓打）',
+            '啟用舊版角色物理，解除抓取前後的拳擊保護。'
+            '從下一局生效，僅在自己主持的遊戲中有效。'
+            '主持連線遊戲時會增加網路流量。',
+        ),
+    }.get(
+        locale,
+        (
+            'Classic Tricks (Bomb Jump / Punch Grab)',
+            'Enable legacy character physics and allow punches around grabs. '
+            'Applies next round in games you host. '
+            'Increases network traffic when hosting multiplayer games.',
+        ),
+    )
 
     rows: list[dui2.Row] = [
         astate.choice_row(
@@ -445,6 +472,12 @@ def _page() -> dui2.Response:
             on_change=apply,
         ),
         dui2.FootnoteRow(_advstrs.legacy_character_physics_description.spec),
+        astate.checkbox_row(
+            lambda s: s.classic_combat,
+            label=LangStrSpecValue.literal(classic_combat_label),
+            on_change=apply,
+        ),
+        dui2.FootnoteRow(LangStrSpecValue.literal(classic_combat_description)),
     ]
 
     def _button(label: LangStrSpec, target: Target) -> dui2.Button:

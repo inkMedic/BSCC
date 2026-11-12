@@ -6,6 +6,7 @@
 #include <atomic>
 #include <memory>
 
+#include "ballistica/base/support/display_time_clock.h"
 #include "ballistica/shared/generic/runnable.h"
 
 namespace ballistica::base {
@@ -77,7 +78,8 @@ class Logic {
 
   /// Called when we should ship a new frame-def to the graphics server. In
   /// graphical builds we also use this opportunity to step our logic.
-  void Draw();
+  /// frame_time is the originating display tick in app-time seconds when known.
+  void Draw(seconds_t frame_time = -1.0);
 
   /// Kick off a low level app shutdown. Shutdown is an asynchronous process
   /// which may take up to a few seconds to complete. This is safe to call
@@ -128,13 +130,13 @@ class Logic {
   auto app_active_applied() -> bool const { return app_active_applied_; }
 
  private:
-  void UpdateDisplayTimeForFrameDraw_();
+  void UpdateDisplayTimeForFrameDraw_(seconds_t frame_time);
   void UpdateDisplayTimeForHeadlessMode_();
   void PostUpdateDisplayTimeForHeadlessMode_();
   void CompleteAppBootstrapping_();
   void ProcessPendingWork_();
   void UpdatePendingWorkTimer_();
-  void StepDisplayTime_();
+  void StepDisplayTime_(seconds_t frame_time = -1.0);
 
   seconds_t display_time_{};
   seconds_t display_time_increment_{1.0 / 60.0};
@@ -145,6 +147,7 @@ class Logic {
   Timer* headless_display_time_step_timer_{};
 
   // GUI scheduling.
+  DisplayTimeClock display_time_clock_;
   seconds_t last_display_time_update_app_time_{-1.0};
   seconds_t recent_display_time_increments_[kDisplayTimeSampleCount]{};
   int recent_display_time_increments_index_{-1};

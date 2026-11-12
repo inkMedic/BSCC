@@ -11,6 +11,8 @@ namespace ballistica::base {
 auto WaitForIOSDisplayTick(SDL_Window* window, int max_fps, bool visible)
     -> bool;
 auto IOSDisplayWantsHighRefresh() -> bool;
+// Latest accepted display tick in the engine's app-time domain. Main thread only.
+auto IOSDisplayTimeSeconds() -> double;
 void RecordIOSFrame(bool rendered, double draw_ms, double present_ms);
 void StopIOSDisplayClock();
 

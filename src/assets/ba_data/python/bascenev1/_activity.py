@@ -138,6 +138,10 @@ class Activity[PlayerT: bascenev1.Player, TeamT: bascenev1.Team](ActorHost):
 
         self._globalsnode: bascenev1.Node | None = None
 
+        #: Whether this activity enables both legacy physics and punch-grab
+        #: tricks. Sampled at transition-in so all players share round rules.
+        self.classic_combat = False
+
         # Player/Team types should have been specified as type args;
         # grab those.
         self._playertype: type[PlayerT]
@@ -386,13 +390,19 @@ class Activity[PlayerT: bascenev1.Player, TeamT: bascenev1.Team](ActorHost):
             # A server can opt every activity into the old spaz
             # physics; see the 'legacy_spaz_physics' server config
             # value. GUI players hosting locally can do the same via
-            # the 'Legacy Character Physics' advanced setting, which
+            # the 'Legacy Character Physics' or 'Classic Combat' setting, which
             # servers ignore (their own config decides). Tournaments
             # honor it for now, though the setting's note reserves the
             # right to change that.
             classic = babase.app.classic
+            self.classic_combat = (
+                classic is not None
+                and classic.server is None
+                and bool(babase.app.config.get('Classic Combat', False))
+            )
             legacy_physics = classic is not None and (
-                classic.legacy_spaz_physics
+                self.classic_combat
+                or classic.legacy_spaz_physics
                 or (
                     classic.server is None
                     and bool(

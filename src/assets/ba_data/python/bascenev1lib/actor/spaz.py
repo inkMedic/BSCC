@@ -91,7 +91,9 @@ class Spaz(bs.Actor):
         classic = bs.app.classic
         assert classic is not None
 
-        self._allow_punch_grab = classic.allow_punch_grab
+        self._allow_punch_grab = (
+            classic.allow_punch_grab or activity.classic_combat
+        )
 
         # We need to behave slightly different in the tutorial.
         self._demo_mode = demo_mode

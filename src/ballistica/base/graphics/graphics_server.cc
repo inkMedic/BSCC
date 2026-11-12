@@ -19,6 +19,10 @@
 #include "ballistica/shared/foundation/macros.h"
 #include "ballistica/shared/generic/thread_cpu_time.h"
 
+#if BA_COMMUNITY_IOS
+#include "frame_clock_ios.h"
+#endif
+
 namespace ballistica::base {
 
 GraphicsServer::GraphicsServer() = default;
@@ -267,6 +271,9 @@ void GraphicsServer::UpdateRenderProfile_(double preprocess_ms,
 
 auto GraphicsServer::WaitForRenderFrameDef_(bool wait_for_frame) -> FrameDef* {
   BA_PRECONDITION_LOG_ONCE(g_base->app_adapter->InGraphicsContext());
+#if BA_COMMUNITY_IOS
+  const double frame_time = IOSDisplayTimeSeconds();
+#endif
   millisecs_t start_time = g_core->AppTimeMillisecs();
 
   // Spin and wait for a short bit for a frame_def to appear.
@@ -292,7 +299,12 @@ auto GraphicsServer::WaitForRenderFrameDef_(bool wait_for_frame) -> FrameDef* {
       // As soon as we start working on rendering a frame, ask the logic
       // thread to start working on the next one for us. Keeps things nice
       // and pipelined.
+#if BA_COMMUNITY_IOS
+      g_base->logic->event_loop()->PushCall(
+          [frame_time] { g_base->logic->Draw(frame_time); });
+#else
       g_base->logic->event_loop()->PushCall([] { g_base->logic->Draw(); });
+#endif
       return frame_def;
     }
 

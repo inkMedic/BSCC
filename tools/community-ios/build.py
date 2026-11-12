@@ -79,13 +79,11 @@ def sources() -> None:
         stamp.write_text(expected)
 
 
-def stage(sdk: str) -> None:
-    from batools._bundlestage import sync_asset_bundle
-    destination = ROOT / 'build/community-ios-stage' / sdk
-    # Clean staging only; stale scripts or host extensions must never enter IPA.
-    if destination.exists():
-        shutil.rmtree(destination)
+def stage_scripts(destination: Path) -> None:
+    """Stage current game scripts, including direct builds from Xcode."""
     scripts = destination / 'ba_data/python'
+    if scripts.exists():
+        shutil.rmtree(scripts)
     ignore = shutil.ignore_patterns('__pycache__', '*.pyc', '*.so', '*.dylib')
     shutil.copytree(ROOT / 'src/assets/ba_data/python', scripts, ignore=ignore)
     for name in ('efro', 'bacommon'):
@@ -94,6 +92,15 @@ def stage(sdk: str) -> None:
     for name in ('urllib3', 'requests', 'certifi', 'idna', 'charset_normalizer', 'websockets'):
         shutil.copytree(site / name, scripts / name, ignore=ignore)
     shutil.copy2(site / 'typing_extensions.py', scripts)
+
+
+def stage(sdk: str) -> None:
+    from batools._bundlestage import sync_asset_bundle
+    destination = ROOT / 'build/community-ios-stage' / sdk
+    # Clean staging only; stale scripts or host extensions must never enter IPA.
+    if destination.exists():
+        shutil.rmtree(destination)
+    stage_scripts(destination)
     pyroot = ROOT / f'build/python_apple_{sdk}_arm64'
     stdlibs = list((pyroot / 'install').glob('**/lib/python3.14'))
     if len(stdlibs) != 1:
